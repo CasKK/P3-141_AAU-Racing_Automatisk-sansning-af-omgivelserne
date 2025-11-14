@@ -5,6 +5,8 @@ import time
 import copy
 import matplotlib.pyplot as plt
 
+from scipy.interpolate import splprep, splev
+
 
 inputVectorsB = [[-350.13, 50.90, 0],
                 [-350.34, 100.90, 0],
@@ -46,7 +48,7 @@ inputVectorsY = [[353.0, 670.0, 1],
                 [1977.0, 3890.0, 1]]
 
 def closestNP(vectorListA, vectorListB):
-    time_start = time.time()
+    # time_start = time.time()
     vectorListA = copy.deepcopy(vectorListA)
     vectorListB = copy.deepcopy(vectorListB)
     for i, vector in enumerate(vectorListA):
@@ -69,8 +71,8 @@ def closestNP(vectorListA, vectorListB):
     vectorListA = np.array(sorted(vectorListA, key=lambda x: x[-2]))
     vectorListB = np.array(sorted(vectorListB, key=lambda x: x[-2]))
 
-    time_end = time.time()
-    print(f"Runtime: {time_end - time_start:.4f} seconds")
+    # time_end = time.time()
+    # print(f"Runtime: {time_end - time_start:.4f} seconds")
     # print(vectorListA)
     # print(vectorListB)
     return vectorListA, vectorListB
@@ -119,45 +121,131 @@ def closestPandasSimple(localVectorListA, localVectorListB):
     return df1, df2
 
 
-def centers(distanceListA, distanceListB):
-    center = []
+def calculateCenters(distanceListA, distanceListB):
+    centers = []
     for i, (vecA, vecB) in enumerate(zip(distanceListA, distanceListB)):
-        center.append([((vecA[0] - vecB[0]) / 2) + vecB[0], ((vecA[1] - vecB[1]) / 2) + vecB[1]])
+        centers.append([((vecA[0] - vecB[0]) / 2) + vecB[0], ((vecA[1] - vecB[1]) / 2) + vecB[1]])
         if i < len(distanceListA) - 1:
             next_vecA = distanceListA[i + 1]
-            center.append([((next_vecA[0] - vecB[0]) / 2) + vecB[0], ((next_vecA[1] - vecB[1]) / 2) + vecB[1]])
+            centers.append([((next_vecA[0] - vecB[0]) / 2) + vecB[0], ((next_vecA[1] - vecB[1]) / 2) + vecB[1]])
         if i < len(distanceListB) - 1:
             next_vecB = distanceListB[i + 1]
-            center.append([((next_vecB[0] - vecA[0]) / 2) + vecA[0], ((next_vecB[1] - vecA[1]) / 2) + vecA[1]])
-    center = np.array(center)
-    print(center)
-    plt.scatter(distanceListA[:, 0], distanceListA[:, 1], c='blue', label='distanceListA')
-    plt.scatter(distanceListB[:, 0], distanceListB[:, 1], c='yellow', edgecolor='black', label='distanceListB')
-    plt.scatter(center[:, 0], center[:, 1], c='red', marker='x', label='Centers')
-    plt.title("distanceListA, distanceListB, and Center Points")
-    plt.xlabel("X")
-    plt.ylabel("Y")
-    plt.legend()
-    plt.grid(True)
-    plt.axis('equal')
-    plt.show()
+            centers.append([((next_vecB[0] - vecA[0]) / 2) + vecA[0], ((next_vecB[1] - vecA[1]) / 2) + vecA[1]])
+    for i, center in enumerate(centers):
+        centers[i].append(np.sqrt(center[0]**2 + center[1]**2))
+    centers = np.array(sorted(centers, key=lambda x: x[-2]))
+    print(centers)
+    # plt.scatter(distanceListA[:, 0], distanceListA[:, 1], c='blue', label='distanceListA')
+    # plt.scatter(distanceListB[:, 0], distanceListB[:, 1], c='yellow', edgecolor='black', label='distanceListB')
+    # plt.scatter(centers[:, 0], centers[:, 1], c='red', marker='x', label='Centers')
+    # plt.title("distanceListA, distanceListB, and Center Points")
+    # plt.xlabel("X")
+    # plt.ylabel("Y")
+    # plt.legend()
+    # plt.grid(True)
+    # plt.axis('equal')
+    # plt.show()
+    return centers
     
 
-
+time_start = time.time()
 
 distanceListB, distanceListY = closestNP(inputVectorsB, inputVectorsY)
+# distanceLista, distanceListd = closestPandasQuick(inputVectorsB, inputVectorsY)
+# distanceLista, distanceListd = closestPandasSimple(inputVectorsB, inputVectorsY)
 
-distanceLista, distanceListd = closestPandasQuick(inputVectorsB, inputVectorsY)
-
-distanceLista, distanceListd = closestPandasSimple(inputVectorsB, inputVectorsY)
-
-
-centers(distanceListB, distanceListY)
+centers = calculateCenters(distanceListB, distanceListY)
 
 
 
 
 
+# from scipy.interpolate import lagrange
+
+# degree = 2
+# coeffs = np.polyfit(centers[:, 0], centers[:, 1], degree)
+# p = np.poly1d(coeffs)
+# # p = lagrange(centers[:, 0], centers[:, 1])
+
+# # Make a smooth range of x-values for plotting the curve
+# x_plot = np.linspace(min(centers[:, 0]), max(centers[:, 0]), 200)
+# y_plot = p(x_plot)
+
+# # Plot
+# plt.scatter(centers[:, 0], centers[:, 1], label='Data Points')   # original points
+# plt.plot(x_plot, y_plot, label='Polynomial Fit')
+
+# plt.legend()
+# plt.xlabel("x")
+# plt.ylabel("y")
+# plt.title("Polynomial Fit")
+# plt.grid(True)
+# plt.show()
+
+
+
+
+
+# from scipy.interpolate import splprep, splev
+# from scipy.integrate import cumulative_trapezoid
+
+
+
+# x = centers[:,0]; y = centers[:,1]
+
+# # Parameter t = cumulative chord length (good initial parameter)
+# d = np.sqrt(np.diff(x)**2 + np.diff(y)**2)
+# t0 = np.concatenate([[0], np.cumsum(d)])
+# t0 = t0 / t0[-1]   # normalize 0..1
+
+# # Fit a parametric B-spline: (u is param 0..1)
+# # s is smoothing factor: 0 => pass through points (may oscillate); increase s to smooth
+# tck, u = splprep([x, y], u=t0, s=2.0, k=3)   # k=3 cubic spline
+
+# # Dense sample in param space
+# u_fine = np.linspace(0, 1, 1000)
+# x_fine, y_fine = splev(u_fine, tck)
+
+# # Compute arc length along the dense samples
+# dx = np.gradient(x_fine)
+# dy = np.gradient(y_fine)
+# speed = np.sqrt(dx*dx + dy*dy)
+# s = np.concatenate([[0], cumulative_trapezoid(speed, u_fine)])
+
+# # create a function to map desired arc-lengths to param u by interpolation
+# total_length = s[-1]
+# num_samples = 400
+# s_samples = np.linspace(0, total_length, num_samples)
+# u_by_s = np.interp(s_samples, s, u_fine)
+
+# # get evenly spaced points by arc length
+# x_s, y_s = splev(u_by_s, tck)
+
+# # Optional: compute curvature kappa = (x'y'' - y'x'') / (x'^2 + y'^2)^(3/2)
+# x_u = np.gradient(x_fine, u_fine)
+# y_u = np.gradient(y_fine, u_fine)
+# x_uu = np.gradient(x_u, u_fine)
+# y_uu = np.gradient(y_u, u_fine)
+# kappa = (x_u * y_uu - y_u * x_uu) / (x_u**2 + y_u**2)**1.5
+
+# # Plot
+# plt.figure(figsize=(10,6))
+# plt.plot(x_fine, y_fine, label='B-spline (parametric, dense)')
+# plt.scatter(x, y, color='red', label='Waypoints')
+# plt.plot(x_s, y_s, '.', markersize=2, label='Evenly spaced (arc length)')
+# plt.axis('equal')
+# plt.legend()
+# plt.title('Parametric B-spline racing line (even spacing)')
+# plt.show()
+
+# # Plot curvature along the param
+# plt.figure(figsize=(10,3))
+# plt.plot(u_fine, np.abs(kappa))
+# plt.title('Absolute curvature vs param u')
+# plt.xlabel('u')
+# plt.ylabel('|curvature|')
+# plt.grid(True)
+# plt.show()
 
 
 
@@ -165,14 +253,44 @@ centers(distanceListB, distanceListY)
 
 
 
+x = centers[:,0]
+y = centers[:,1]
+
+# Initial parameter based on chord length (helps avoid oscillation)
+d = np.sqrt(np.diff(x)**2 + np.diff(y)**2)
+# print("d: ")
+# print(d)
+t = np.concatenate([[0], np.cumsum(d)])
+# print("t: ")
+# print(t)
+t = t / t[-1]  # normalize to 0..1
+# print("t: ")
+# print(t)
+
+# ★ KEY PART: smoothing factor s > 0 (tune this!)
+# s=0 → exact through points (bad for racing line)
+# s=50–200 → smooth but still follows general shape
+tck, u = splprep([x, y], u=t, s=50000, k=5)
+# print("tck: ")
+# print(tck)
+# print("u: ")
+# print(u)
+
+# Generate smoothed line
+u_fine = np.linspace(0, 1, 800)
+x_smooth, y_smooth = splev(u_fine, tck)
 
 
+time_end = time.time()
+print(f"Runtime: {time_end - time_start:.4f} seconds")
 
-
-
-
-
-
+plt.figure(figsize=(8,10))
+plt.scatter(x, y, color='red', label="Original waypoints")
+plt.plot(x_smooth, y_smooth, label="Smoothed B-spline fit", linewidth=2)
+plt.axis('equal')
+plt.legend()
+plt.title("Smoothed racing line fit (B-spline with smoothing)")
+plt.show()
 
 
 
