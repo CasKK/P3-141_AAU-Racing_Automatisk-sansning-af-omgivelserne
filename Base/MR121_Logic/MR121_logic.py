@@ -158,7 +158,7 @@ centers = calculateCenters(distanceListB, distanceListY)
 
 
 
-
+###############################################################
 
 # from scipy.interpolate import lagrange
 
@@ -184,74 +184,7 @@ centers = calculateCenters(distanceListB, distanceListY)
 
 
 
-
-
-# from scipy.interpolate import splprep, splev
-# from scipy.integrate import cumulative_trapezoid
-
-
-
-# x = centers[:,0]; y = centers[:,1]
-
-# # Parameter t = cumulative chord length (good initial parameter)
-# d = np.sqrt(np.diff(x)**2 + np.diff(y)**2)
-# t0 = np.concatenate([[0], np.cumsum(d)])
-# t0 = t0 / t0[-1]   # normalize 0..1
-
-# # Fit a parametric B-spline: (u is param 0..1)
-# # s is smoothing factor: 0 => pass through points (may oscillate); increase s to smooth
-# tck, u = splprep([x, y], u=t0, s=2.0, k=3)   # k=3 cubic spline
-
-# # Dense sample in param space
-# u_fine = np.linspace(0, 1, 1000)
-# x_fine, y_fine = splev(u_fine, tck)
-
-# # Compute arc length along the dense samples
-# dx = np.gradient(x_fine)
-# dy = np.gradient(y_fine)
-# speed = np.sqrt(dx*dx + dy*dy)
-# s = np.concatenate([[0], cumulative_trapezoid(speed, u_fine)])
-
-# # create a function to map desired arc-lengths to param u by interpolation
-# total_length = s[-1]
-# num_samples = 400
-# s_samples = np.linspace(0, total_length, num_samples)
-# u_by_s = np.interp(s_samples, s, u_fine)
-
-# # get evenly spaced points by arc length
-# x_s, y_s = splev(u_by_s, tck)
-
-# # Optional: compute curvature kappa = (x'y'' - y'x'') / (x'^2 + y'^2)^(3/2)
-# x_u = np.gradient(x_fine, u_fine)
-# y_u = np.gradient(y_fine, u_fine)
-# x_uu = np.gradient(x_u, u_fine)
-# y_uu = np.gradient(y_u, u_fine)
-# kappa = (x_u * y_uu - y_u * x_uu) / (x_u**2 + y_u**2)**1.5
-
-# # Plot
-# plt.figure(figsize=(10,6))
-# plt.plot(x_fine, y_fine, label='B-spline (parametric, dense)')
-# plt.scatter(x, y, color='red', label='Waypoints')
-# plt.plot(x_s, y_s, '.', markersize=2, label='Evenly spaced (arc length)')
-# plt.axis('equal')
-# plt.legend()
-# plt.title('Parametric B-spline racing line (even spacing)')
-# plt.show()
-
-# # Plot curvature along the param
-# plt.figure(figsize=(10,3))
-# plt.plot(u_fine, np.abs(kappa))
-# plt.title('Absolute curvature vs param u')
-# plt.xlabel('u')
-# plt.ylabel('|curvature|')
-# plt.grid(True)
-# plt.show()
-
-
-
-
-
-
+#########################################################
 
 x = centers[:,0]
 y = centers[:,1]
@@ -297,7 +230,7 @@ plt.show()
 
 
 
-
+#####################################################
 
 
 
