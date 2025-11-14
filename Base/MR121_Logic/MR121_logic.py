@@ -3,6 +3,7 @@ import numpy as np
 import pandas as pd
 import time
 import copy
+import matplotlib.pyplot as plt
 
 
 inputVectorsB = [[-350.13, 50.90, 0],
@@ -11,13 +12,38 @@ inputVectorsB = [[-350.13, 50.90, 0],
                 [-350.13, 250.90, 0],
                 [-350.34, 300.90, 0],
                 [-350.56, 420.90, 0]]
-
 inputVectorsY = [[350.13, 40.90, 1],
                 [350.34, 100.90, 1],
                 [350.56, 200.90, 1],
                 [350.13, 250.90, 1],
                 [350.34, 300.90, 1],
                 [350.56, 400.90, 1]]
+
+inputVectorsB = [[-368.0, 540.0, 0],
+                [-381.0, 2580.0, 0],
+                [-363.0, 2250.0, 0],
+                [-344.0, 3540.0, 0],
+                [-365.0, 1100.0, 0],
+                [-353.0, 4690.0, 0]]
+inputVectorsY = [[353.0, 670.0, 1],
+                [353.0, 3510.0, 1],
+                [351.0, 2150.0, 1],
+                [379.0, 2630.0, 1],
+                [377.0, 1330.0, 1],
+                [377.0, 4490.0, 1]]
+
+inputVectorsB = [[-368.0, 540.0, 0],
+                [-365.0, 1100.0, 0],
+                [-403.0, 2250.0, 0],
+                [-1.0, 3680.0, 0],
+                [1044.0, 4540.0, 0],
+                [1847.0, 4690.0, 0]]
+inputVectorsY = [[353.0, 670.0, 1],
+                [377.0, 1330.0, 1],
+                [351.0, 2150.0, 1],
+                [779.0, 3230.0, 1],
+                [1353.0, 3710.0, 1],
+                [1977.0, 3890.0, 1]]
 
 def closestNP(vectorListA, vectorListB):
     time_start = time.time()
@@ -95,11 +121,27 @@ def closestPandasSimple(localVectorListA, localVectorListB):
 
 def centers(distanceListA, distanceListB):
     center = []
-
     for i, (vecA, vecB) in enumerate(zip(distanceListA, distanceListB)):
-        center.append([(vecA[0] - vecB[0]) / 2, (vecA[1] - vecB[1]) / 2])
+        center.append([((vecA[0] - vecB[0]) / 2) + vecB[0], ((vecA[1] - vecB[1]) / 2) + vecB[1]])
+        if i < len(distanceListA) - 1:
+            next_vecA = distanceListA[i + 1]
+            center.append([((next_vecA[0] - vecB[0]) / 2) + vecB[0], ((next_vecA[1] - vecB[1]) / 2) + vecB[1]])
+        if i < len(distanceListB) - 1:
+            next_vecB = distanceListB[i + 1]
+            center.append([((next_vecB[0] - vecA[0]) / 2) + vecA[0], ((next_vecB[1] - vecA[1]) / 2) + vecA[1]])
     center = np.array(center)
     print(center)
+    plt.scatter(distanceListA[:, 0], distanceListA[:, 1], c='blue', label='distanceListA')
+    plt.scatter(distanceListB[:, 0], distanceListB[:, 1], c='yellow', edgecolor='black', label='distanceListB')
+    plt.scatter(center[:, 0], center[:, 1], c='red', marker='x', label='Centers')
+    plt.title("distanceListA, distanceListB, and Center Points")
+    plt.xlabel("X")
+    plt.ylabel("Y")
+    plt.legend()
+    plt.grid(True)
+    plt.axis('equal')
+    plt.show()
+    
 
 
 
