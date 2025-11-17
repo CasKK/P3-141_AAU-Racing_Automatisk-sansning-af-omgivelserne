@@ -137,9 +137,7 @@ def calculateCenters(distanceListA, distanceListB):
     print(centers)
     return centers
     
-plt.figure(figsize=(8,8))
-
-time_start = time.time()
+time_start = time.time() # start time for measuring perfomance
 
 distanceListB, distanceListY = closestNP(inputVectorsBTurn, inputVectorsYTurn)
 # distanceLista, distanceListd = closestPandasQuick(inputVectorsB, inputVectorsY)
@@ -148,8 +146,45 @@ distanceListB, distanceListY = closestNP(inputVectorsBTurn, inputVectorsYTurn)
 centers = calculateCenters(distanceListB, distanceListY)
 
 
+########### Make and fit B-spline ############### 
+x = centers[:,0]
+y = centers[:,1]
 
-###############################################################
+# Initial parameter based on chord length (helps avoid oscillation)
+d = np.sqrt(np.diff(x)**2 + np.diff(y)**2)
+t = np.concatenate([[0], np.cumsum(d)])
+t = t / t[-1]  # normalize to 0..1
+
+# ★ KEY PART: smoothing factor s > 0 (tune this!)
+# s=0 → exact through points (bad for racing line)
+# s=50–200 → smooth but still follows general shape
+tck, u = splprep([x, y], u=t, s=50000, k=5)
+
+# Generate smoothed line
+u_fine = np.linspace(0, 1, 800)
+x_smooth, y_smooth = splev(u_fine, tck)
+
+
+######################################
+
+time_end = time.time() # stop time
+print(f"Runtime: {time_end - time_start:.4f} seconds")
+
+
+################# plot ##############
+
+plt.figure(figsize=(8,8))
+plt.scatter(distanceListY[:, 0], distanceListY[:, 1], c='blue', label='distanceListA')
+plt.scatter(distanceListB[:, 0], distanceListB[:, 1], c='yellow', edgecolor='black', label='distanceListB')
+plt.scatter(x, y, color='red', label="Original waypoints")
+plt.plot(x_smooth, y_smooth, label="Smoothed B-spline fit", linewidth=2)
+plt.axis('equal')
+#plt.legend()
+#plt.title("Smoothed racing line fit (B-spline with smoothing)")
+plt.show()
+
+
+############################ Polyfit ###################################
 
 # from scipy.interpolate import lagrange
 
@@ -174,46 +209,7 @@ centers = calculateCenters(distanceListB, distanceListY)
 # plt.show()
 
 
-
-#########################################################
-
-x = centers[:,0]
-y = centers[:,1]
-
-# Initial parameter based on chord length (helps avoid oscillation)
-d = np.sqrt(np.diff(x)**2 + np.diff(y)**2)
-t = np.concatenate([[0], np.cumsum(d)])
-t = t / t[-1]  # normalize to 0..1
-
-# ★ KEY PART: smoothing factor s > 0 (tune this!)
-# s=0 → exact through points (bad for racing line)
-# s=50–200 → smooth but still follows general shape
-tck, u = splprep([x, y], u=t, s=50000, k=5)
-
-# Generate smoothed line
-u_fine = np.linspace(0, 1, 800)
-x_smooth, y_smooth = splev(u_fine, tck)
-
-time_end = time.time()
-print(f"Runtime: {time_end - time_start:.4f} seconds")
-plt.scatter(distanceListY[:, 0], distanceListY[:, 1], c='blue', label='distanceListA')
-plt.scatter(distanceListB[:, 0], distanceListB[:, 1], c='yellow', edgecolor='black', label='distanceListB')
-plt.scatter(x, y, color='red', label="Original waypoints")
-plt.plot(x_smooth, y_smooth, label="Smoothed B-spline fit", linewidth=2)
-plt.axis('equal')
-#plt.legend()
-#plt.title("Smoothed racing line fit (B-spline with smoothing)")
-plt.show()
-
-
-
-
-
-
-#####################################################
-
-
-
+######################## 'pass-by-value' vs 'pass-by-reference' test #############################
 
 # inputA =    [[-350.13, 50.90, "blue"],
 #             [-350.34, 100.90, "blue"],
@@ -235,7 +231,9 @@ plt.show()
 # print(inputA)
 # print(someVar)
 
+# # result:
+# # [[-350.13, 50.9, 'blue'], [-350.34, 100.9, 'blue'], [-350.56, 200.9, 'blue'], [-350.13, 250.9, 'blue'], [-350.34, 300.9, 'blue'], [-350.56, 400.9, 'blue']]
+# # [[-350.13, 50.9, 'blue', -0.12999999999999545], [-350.34, 100.9, 'blue', -0.339999999999975], [-350.56, 200.9, 'blue', -0.5600000000000023], [-350.13, 250.9, 'blue', -0.12999999999999545], [-350.34, 300.9, 'blue', -0.339999999999975], [-350.56, 400.9, 'blue', -0.5600000000000023]]
+# # [[-350.13, 50.9, 'blue', -0.12999999999999545], [-350.34, 100.9, 'blue', -0.339999999999975], [-350.56, 200.9, 'blue', -0.5600000000000023], [-350.13, 250.9, 'blue', -0.12999999999999545], [-350.34, 300.9, 'blue', -0.339999999999975], [-350.56, 400.9, 'blue', -0.5600000000000023]]
 
-# [[-350.13, 50.9, 'blue'], [-350.34, 100.9, 'blue'], [-350.56, 200.9, 'blue'], [-350.13, 250.9, 'blue'], [-350.34, 300.9, 'blue'], [-350.56, 400.9, 'blue']]
-# [[-350.13, 50.9, 'blue', -0.12999999999999545], [-350.34, 100.9, 'blue', -0.339999999999975], [-350.56, 200.9, 'blue', -0.5600000000000023], [-350.13, 250.9, 'blue', -0.12999999999999545], [-350.34, 300.9, 'blue', -0.339999999999975], [-350.56, 400.9, 'blue', -0.5600000000000023]]
-# [[-350.13, 50.9, 'blue', -0.12999999999999545], [-350.34, 100.9, 'blue', -0.339999999999975], [-350.56, 200.9, 'blue', -0.5600000000000023], [-350.13, 250.9, 'blue', -0.12999999999999545], [-350.34, 300.9, 'blue', -0.339999999999975], [-350.56, 400.9, 'blue', -0.5600000000000023]]
+
