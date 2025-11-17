@@ -147,6 +147,7 @@ def calculateCenters(distanceListA, distanceListB):
     # plt.show()
     return centers
     
+plt.figure(figsize=(8,8))
 
 time_start = time.time()
 
@@ -203,7 +204,7 @@ t = t / t[-1]  # normalize to 0..1
 # ★ KEY PART: smoothing factor s > 0 (tune this!)
 # s=0 → exact through points (bad for racing line)
 # s=50–200 → smooth but still follows general shape
-tck, u = splprep([x, y], u=t, s=50000, k=5)
+tck, u = splprep([x, y], u=t, s=0, k=1)
 # print("tck: ")
 # print(tck)
 # print("u: ")
@@ -221,8 +222,8 @@ print(f"Runtime: {time_end - time_start:.4f} seconds")
 plt.scatter(x, y, color='red', label="Original waypoints")
 plt.plot(x_smooth, y_smooth, label="Smoothed B-spline fit", linewidth=2)
 plt.axis('equal')
-plt.legend()
-plt.title("Smoothed racing line fit (B-spline with smoothing)")
+#plt.legend()
+#plt.title("Smoothed racing line fit (B-spline with smoothing)")
 plt.show()
 
 
