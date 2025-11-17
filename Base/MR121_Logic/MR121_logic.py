@@ -203,7 +203,7 @@ t = t / t[-1]  # normalize to 0..1
 # ★ KEY PART: smoothing factor s > 0 (tune this!)
 # s=0 → exact through points (bad for racing line)
 # s=50–200 → smooth but still follows general shape
-tck, u = splprep([x, y], u=t, s=0, k=1)
+tck, u = splprep([x, y], u=t, s=50000, k=5)
 # print("tck: ")
 # print(tck)
 # print("u: ")
