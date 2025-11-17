@@ -34,18 +34,18 @@ inputVectorsY = [[353.0, 670.0, 1],
                 [377.0, 1330.0, 1],
                 [377.0, 4490.0, 1]]
 
-inputVectorsB = [[-368.0, 540.0, 0],
-                [-365.0, 1100.0, 0],
-                [-403.0, 2250.0, 0],
-                [-1.0, 3680.0, 0],
-                [1044.0, 4540.0, 0],
-                [1847.0, 4690.0, 0]]
-inputVectorsY = [[353.0, 670.0, 1],
-                [377.0, 1330.0, 1],
-                [351.0, 2150.0, 1],
-                [779.0, 3230.0, 1],
-                [1353.0, 3710.0, 1],
-                [1977.0, 3890.0, 1]]
+inputVectorsBTurn = [[-368.0, 540.0, 0],
+                    [-365.0, 1100.0, 0],
+                    [-403.0, 2250.0, 0],
+                    [-1.0, 3680.0, 0],
+                    [1044.0, 4540.0, 0],
+                    [1847.0, 4690.0, 0]]
+inputVectorsYTurn = [[353.0, 670.0, 1],
+                    [377.0, 1330.0, 1],
+                    [351.0, 2150.0, 1],
+                    [779.0, 3230.0, 1],
+                    [1353.0, 3710.0, 1],
+                    [1977.0, 3890.0, 1]]
 
 def closestNP(vectorListA, vectorListB):
     # time_start = time.time()
@@ -135,23 +135,13 @@ def calculateCenters(distanceListA, distanceListB):
         centers[i].append(np.sqrt(center[0]**2 + center[1]**2))
     centers = np.array(sorted(centers, key=lambda x: x[-2]))
     print(centers)
-    plt.scatter(distanceListA[:, 0], distanceListA[:, 1], c='blue', label='distanceListA')
-    plt.scatter(distanceListB[:, 0], distanceListB[:, 1], c='yellow', edgecolor='black', label='distanceListB')
-    #plt.scatter(centers[:, 0], centers[:, 1], c='red', marker='x', label='Centers')
-    # plt.title("distanceListA, distanceListB, and Center Points")
-    # plt.xlabel("X")
-    # plt.ylabel("Y")
-    # plt.legend()
-    # plt.grid(True)
-    # plt.axis('equal')
-    # plt.show()
     return centers
     
 plt.figure(figsize=(8,8))
 
 time_start = time.time()
 
-distanceListB, distanceListY = closestNP(inputVectorsB, inputVectorsY)
+distanceListB, distanceListY = closestNP(inputVectorsBTurn, inputVectorsYTurn)
 # distanceLista, distanceListd = closestPandasQuick(inputVectorsB, inputVectorsY)
 # distanceLista, distanceListd = closestPandasSimple(inputVectorsB, inputVectorsY)
 
@@ -192,33 +182,22 @@ y = centers[:,1]
 
 # Initial parameter based on chord length (helps avoid oscillation)
 d = np.sqrt(np.diff(x)**2 + np.diff(y)**2)
-# print("d: ")
-# print(d)
 t = np.concatenate([[0], np.cumsum(d)])
-# print("t: ")
-# print(t)
 t = t / t[-1]  # normalize to 0..1
-# print("t: ")
-# print(t)
 
 # ★ KEY PART: smoothing factor s > 0 (tune this!)
 # s=0 → exact through points (bad for racing line)
 # s=50–200 → smooth but still follows general shape
-tck, u = splprep([x, y], u=t, s=0, k=1)
-# print("tck: ")
-# print(tck)
-# print("u: ")
-# print(u)
+tck, u = splprep([x, y], u=t, s=50000, k=5)
 
 # Generate smoothed line
 u_fine = np.linspace(0, 1, 800)
 x_smooth, y_smooth = splev(u_fine, tck)
 
-
 time_end = time.time()
 print(f"Runtime: {time_end - time_start:.4f} seconds")
-
-#plt.figure(figsize=(8,10))
+plt.scatter(distanceListY[:, 0], distanceListY[:, 1], c='blue', label='distanceListA')
+plt.scatter(distanceListB[:, 0], distanceListB[:, 1], c='yellow', edgecolor='black', label='distanceListB')
 plt.scatter(x, y, color='red', label="Original waypoints")
 plt.plot(x_smooth, y_smooth, label="Smoothed B-spline fit", linewidth=2)
 plt.axis('equal')
