@@ -47,7 +47,7 @@ inputVectorsYTurn = [[353.0, 670.0, 1],
                     [1353.0, 3710.0, 1],
                     [1977.0, 3890.0, 1]]
 
-def closestNP(vectorListA, vectorListB):
+def closestNP(vectorListA, vectorListB):########### Sort two point lists based on distance from car(0,0) ############
     # time_start = time.time()
     vectorListA = copy.deepcopy(vectorListA)
     vectorListB = copy.deepcopy(vectorListB)
@@ -121,8 +121,9 @@ def closestPandasSimple(localVectorListA, localVectorListB):
     return df1, df2
 
 
-def calculateCenters(distanceListA, distanceListB):
+def calculateCenters(distanceListA, distanceListB):############# Canculate center points from two point lists ############
     centers = []
+    centers.append([-300,0])
     for i, (vecA, vecB) in enumerate(zip(distanceListA, distanceListB)):
         centers.append([((vecA[0] - vecB[0]) / 2) + vecB[0], ((vecA[1] - vecB[1]) / 2) + vecB[1]])
         if i < len(distanceListA) - 1:
@@ -134,10 +135,40 @@ def calculateCenters(distanceListA, distanceListB):
     for i, center in enumerate(centers):
         centers[i].append(np.sqrt(center[0]**2 + center[1]**2))
     centers = np.array(sorted(centers, key=lambda x: x[-2]))
-    print(centers)
+    # print(centers)
     return centers
-    
+
+
+def BSpline(points):########### Make and fit B-spline ############### 
+    x = points[:,0]
+    y = points[:,1]
+
+    # Initial parameter based on chord length (helps avoid oscillation)
+    d = np.sqrt(np.diff(x)**2 + np.diff(y)**2)
+    t = np.concatenate([[0], np.cumsum(d)])
+    t = t / t[-1]  # normalize to 0..1
+
+    # ★ KEY PART: smoothing factor s > 0 (tune this!)
+    # s=0 → exact through points (bad for racing line)
+    # s=50–200 → smooth but still follows general shape
+    tck, u = splprep([x, y], u=t, s=50000, k=5)
+
+    # Generate smoothed line
+    u_fine = np.linspace(0, 1, 800)
+    x_smooth, y_smooth = splev(u_fine, tck)
+
+    dx, dy = splev(u_fine, tck, der=1)
+    ddx, ddy = splev(u_fine, tck, der=2)
+    return np.array([dx, dy]), np.array([ddx, ddy]), x_smooth, y_smooth
+
+
+############## Pre program stuff #############
+
+temp = 50
 time_start = time.time() # start time for measuring perfomance
+
+
+############## Program ##################
 
 distanceListB, distanceListY = closestNP(inputVectorsBTurn, inputVectorsYTurn)
 # distanceLista, distanceListd = closestPandasQuick(inputVectorsB, inputVectorsY)
@@ -145,30 +176,16 @@ distanceListB, distanceListY = closestNP(inputVectorsBTurn, inputVectorsYTurn)
 
 centers = calculateCenters(distanceListB, distanceListY)
 
-
-########### Make and fit B-spline ############### 
-x = centers[:,0]
-y = centers[:,1]
-
-# Initial parameter based on chord length (helps avoid oscillation)
-d = np.sqrt(np.diff(x)**2 + np.diff(y)**2)
-t = np.concatenate([[0], np.cumsum(d)])
-t = t / t[-1]  # normalize to 0..1
-
-# ★ KEY PART: smoothing factor s > 0 (tune this!)
-# s=0 → exact through points (bad for racing line)
-# s=50–200 → smooth but still follows general shape
-tck, u = splprep([x, y], u=t, s=50000, k=5)
-
-# Generate smoothed line
-u_fine = np.linspace(0, 1, 800)
-x_smooth, y_smooth = splev(u_fine, tck)
+direction, direction1, x_smooth, y_smooth = BSpline(centers)
 
 
-######################################
+################# Post program stuff #####################
 
 time_end = time.time() # stop time
-print(f"Runtime: {time_end - time_start:.4f} seconds")
+print(f"Runtime: {time_end - time_start:.5f} seconds")
+
+print(direction[:, temp])
+print(direction1[:, temp])
 
 
 ################# plot ##############
@@ -176,8 +193,10 @@ print(f"Runtime: {time_end - time_start:.4f} seconds")
 plt.figure(figsize=(8,8))
 plt.scatter(distanceListY[:, 0], distanceListY[:, 1], c='blue', label='distanceListA')
 plt.scatter(distanceListB[:, 0], distanceListB[:, 1], c='yellow', edgecolor='black', label='distanceListB')
-plt.scatter(x, y, color='red', label="Original waypoints")
+plt.scatter(centers[:,0], centers[:,1], color='red', label="Original waypoints")
 plt.plot(x_smooth, y_smooth, label="Smoothed B-spline fit", linewidth=2)
+plt.quiver(x_smooth[temp], y_smooth[temp], direction[0, temp] / 10, direction[1, temp] / 10, angles='xy', scale_units='xy', scale=1, color='green', label='Vector')
+plt.quiver(x_smooth[temp], y_smooth[temp], direction1[0, temp] / 10, direction1[1, temp] / 10, angles='xy', scale_units='xy', scale=1, color='green', label='Vector')
 plt.axis('equal')
 #plt.legend()
 #plt.title("Smoothed racing line fit (B-spline with smoothing)")
