@@ -139,7 +139,7 @@ def calculateCenters(distanceListA, distanceListB):############# Canculate cente
     return centers
 
 
-def BSpline(points):########### Make and fit B-spline ############### 
+def BSpline(points):########### Make and fit Basis-spline ############### 
     x = points[:,0]
     y = points[:,1]
 
@@ -228,7 +228,7 @@ plt.show()
 # plt.show()
 
 
-######################## 'pass-by-value' vs 'pass-by-reference' test #############################
+######################## 'pass-by-value' vs 'pass-by-reference'? mby... test #############################
 
 # inputA =    [[-350.13, 50.90, "blue"],
 #             [-350.34, 100.90, "blue"],
