@@ -70,6 +70,8 @@ inputVectorsBTurn = [[353.0, 670.0, 1],
                     [3800.0, 5700.0, 1],
                     [3810.0, 6300.0, 1]]
 
+car = [300,1500]
+
 def closestNP(vectorListA, vectorListB):########### Sort two point lists based on distance from car(0,0) ############
     # time_start = time.time()
     vectorListA = copy.deepcopy(vectorListA)
@@ -145,7 +147,7 @@ def closestPandasSimple(localVectorListA, localVectorListB):
 
 
 def calculateCenters(distanceListA, distanceListB):############# Canculate center points from two point lists ############
-    centers = [[0,0], [0,300], [0,100], [0,150], [0,200]] #, [0,250], [0,350], [0,300], [0,25], [0,75], [0,125], [0,175], [0,225], [0,275], [0,325], [0,375]
+    centers = [car]#, [0, 1600], [0, 1700]]#, [0,50], [0,100], [0,150], [0,200]] #, [0,250], [0,350], [0,300], [0,25], [0,75], [0,125], [0,175], [0,225], [0,275], [0,325], [0,375]
     #centers.append([0,0], [0,100])
     for i, (vecA, vecB) in enumerate(zip(distanceListA, distanceListB)):
         centers.append([((vecA[0] - vecB[0]) / 2) + vecB[0], ((vecA[1] - vecB[1]) / 2) + vecB[1]])
@@ -182,6 +184,60 @@ def BSpline1232():
     # x_smooth = spl_x(t_fine)
     # y_smooth = spl_y(t_fine)
 
+
+def BSpline2(points):
+    """
+    points: Nx2 numpy array of centerline points
+    smoothing: spline smoothing factor
+    k: spline degree (3=cubic, 5=quintic)
+    """
+
+    # ──────────────────────────────────────────────
+    # 1. Force the spline to have a correct start direction
+    #    We insert a ghost point 1m in front of the car (0,0 → 0,1)
+    # ──────────────────────────────────────────────
+
+
+    # ──────────────────────────────────────────────
+    # 2. Chord-length parameterization (important!)
+    # ──────────────────────────────────────────────
+    d = np.linalg.norm(np.diff(points, axis=0), axis=1)
+    t = np.concatenate(([0], np.cumsum(d)))
+    t /= t[-1]  # normalize to 0–1
+
+    # ──────────────────────────────────────────────
+    # 3. Build spline
+    # ──────────────────────────────────────────────
+    tck, u = splprep([points[:, 0], points[:, 1]],
+                     u=t,
+                     s=0,
+                     k=3)
+
+    # Evaluation points (you can adjust resolution)
+    u_fine = np.linspace(0, 1, 1000)
+
+    # Spline and derivatives
+    x,  y   = splev(u_fine, tck)
+    dx, dy  = splev(u_fine, tck, der=1)
+    ddx, ddy = splev(u_fine, tck, der=2)
+
+    # ──────────────────────────────────────────────
+    # 4. Curvature
+    # κ = (x' y'' – y' x'') / (x'^2 + y'^2)^(3/2)
+    # ──────────────────────────────────────────────
+    speed = np.sqrt(dx**2 + dy**2)
+    curvature = (dx * ddy - dy * ddx) / (speed**3 + 1e-9)
+
+    # ──────────────────────────────────────────────
+    # 5. Velocity profile
+    #    max speed ∝ 1 / sqrt(|κ|)
+    # ──────────────────────────────────────────────
+    vmax = np.sqrt(1 / (np.abs(curvature) + 1e-6))
+    vmax = np.clip(vmax, 0, 80)
+
+    return vmax, curvature, x, y, dx, dy
+
+
 def BSpline(points):########### Make and fit Basis-spline ############### 
     d = 0
     t = [0]
@@ -190,7 +246,7 @@ def BSpline(points):########### Make and fit Basis-spline ###############
             nextPoint = points[i+1]
             d += (np.sqrt((point[0] - nextPoint[0])**2 + (point[1] - nextPoint[1])**2)) 
             t = np.append(t, d)
-    t = t / t[-1]  # normalize to 0..1
+    t = t / t[-1]  # normalize between 0--1
     
     tck, u = splprep([points[:,0], points[:,1]], u=t, s=50000, k=5)
     u_fine = np.linspace(0, 1, 800)
@@ -205,6 +261,13 @@ def BSpline(points):########### Make and fit Basis-spline ###############
     #v_target = np.convolve(v_max, np.ones(50)/10, mode='same')
     return v_max, kp, x_u, y_u, dx_u, dy_u #np.array([dx_u, dy_u]), np.array([ddx_u, ddy_u])
 
+def closestPoint(listA, listB): # Find the list index of the closest point to the car  
+    newList = []
+    for i, (x, y) in enumerate(zip(listA, listB)):
+        nextDist = np.sqrt((x - car[0])**2 + (y - car[1])**2)
+        newList.append([nextDist, i])
+    newList = np.array(sorted(newList, key=lambda x: x[0]))
+    return newList[0, 1]
 
 ############## Pre program stuff #############
 
@@ -218,17 +281,18 @@ distanceListB, distanceListY = closestNP(inputVectorsYTurn, inputVectorsBTurn)
 # distanceLista, distanceListd = closestPandasQuick(inputVectorsB, inputVectorsY)
 # distanceLista, distanceListd = closestPandasSimple(inputVectorsB, inputVectorsY)
 
-for distance in distanceListB:
-    distance[0] += 300
-for distance in distanceListY:
-    distance[0] += 300
+# for distance in distanceListB:
+#     distance[0] += 300
+# for distance in distanceListY:
+#     distance[0] += 300
 
 centers = calculateCenters(distanceListB, distanceListY)
 
 s, kp, x_smooth, y_smooth, dx_u, dy_u = BSpline(centers)
 
-# plt.plot(kp)
-# plt.show()
+closest_u = closestPoint(x_smooth, y_smooth)
+L = 480
+steering = np.arctan(L * kp)
 
 
 ################# Post program stuff #####################
@@ -236,48 +300,44 @@ s, kp, x_smooth, y_smooth, dx_u, dy_u = BSpline(centers)
 time_end = time.time() # stop time
 print(f"Runtime: {time_end - time_start:.5f} seconds")
 
-print(s[temp])
-print(kp[temp])
-L = 1000
-steering = np.arctan(L * kp)
+# print(s[temp])
+# print(kp[temp])
+print(closest_u)
 
-steer_first = steering[0]
-print("steering (rad):", steer_first)
-print("steering (deg):", np.degrees(steer_first))
+# plt.plot(np.degrees(steering))
+# plt.show()
+
+steer_now = steering[101]
+#print("steering (rad):", steer_first)
+print("steering (deg):", np.degrees(steer_now))
 
 
 ################# plot ##############
 
 
-df = pd.DataFrame({
-    'x': x_smooth,
-    'y': y_smooth,
-    'z': s
-})
-
-
-fig = px.scatter_3d(
-        df,
-        x='x',
-        y='y',
-        z='z',
-        opacity=0.8,
-        size_max=5
-    )
-
-min_val = min(df['x'].min(), df['y'].min())
-max_val = max(df['x'].max(), df['y'].max())
-
-# Update layout to set equal ranges
-fig.update_layout(
-    scene=dict(
-        xaxis=dict(range=[min_val, max_val]),
-        yaxis=dict(range=[min_val, max_val])
-    )
-)
-
-
-fig.show()
+# df = pd.DataFrame({
+#     'x': x_smooth,
+#     'y': y_smooth,
+#     'z': s
+# })
+# fig = px.scatter_3d(
+#         df,
+#         x='x',
+#         y='y',
+#         z='z',
+#         opacity=0.8,
+#         size_max=5
+#     )
+# min_val = min(df['x'].min(), df['y'].min())
+# max_val = max(df['x'].max(), df['y'].max())
+# # Update layout to set equal ranges
+# fig.update_layout(
+#     scene=dict(
+#         xaxis=dict(range=[min_val, max_val]),
+#         yaxis=dict(range=[min_val, max_val])
+#     )
+# )
+# fig.show()
 
 plt.figure(figsize=(8,8))
 plt.scatter(distanceListY[:, 0], distanceListY[:, 1], c='blue', label='distanceListA')
@@ -288,7 +348,7 @@ plt.plot(x_smooth, y_smooth, label="Smoothed B-spline fit", linewidth=2)
 #plt.quiver(x_smooth[temp], y_smooth[temp], direction[0, temp] / 10, direction[1, temp] / 10, angles='xy', scale_units='xy', scale=1, color='green', label='Vector')
 #plt.quiver(x_smooth[temp], y_smooth[temp], direction1[0, temp] / 10, direction1[1, temp] / 10, angles='xy', scale_units='xy', scale=1, color='green', label='Vector')
 
-idx = np.linspace(0, len(x_smooth)-1, 30).astype(int)
+idx = np.linspace(0, len(x_smooth)-1, 80).astype(int)
 arrow_scale = 200
 for i in idx:
     tx, ty = dx_u[i], dy_u[i]
