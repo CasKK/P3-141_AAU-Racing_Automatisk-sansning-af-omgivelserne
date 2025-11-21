@@ -35,13 +35,13 @@ from scipy.interpolate import splprep, splev, make_lsq_spline
 #                 [377.0, 4490.0, 1]]
 
 ##### Original turn #######
-inputVectorsYTurn = [[-368.0, 540.0, 0],
+inputVectorsBTurn = [[-368.0, 540.0, 0],
                     [-365.0, 1100.0, 0],
                     [-403.0, 2250.0, 0],
                     [-1.0, 3680.0, 0],
                     [1044.0, 4540.0, 0],
                     [1847.0, 4690.0, 0]]
-inputVectorsBTurn = [[353.0, 670.0, 1],
+inputVectorsYTurn = [[353.0, 670.0, 1],
                     [377.0, 1330.0, 1],
                     [351.0, 2150.0, 1],
                     [779.0, 3230.0, 1],
@@ -49,7 +49,7 @@ inputVectorsBTurn = [[353.0, 670.0, 1],
                     [1977.0, 3890.0, 1]]
 
 ####### Expanded turn #########
-inputVectorsYTurn = [[-368.0, 540.0, 0],
+inputVectorsBTurn = [[-368.0, 540.0, 0],
                     [-365.0, 1100.0, 0],
                     [-403.0, 2250.0, 0],
                     [-1.0, 3680.0, 0],
@@ -59,7 +59,7 @@ inputVectorsYTurn = [[-368.0, 540.0, 0],
                     [2900.0, 5200.0, 0],
                     [3000.0, 5600.0, 0],
                     [2910.0, 6300.0, 0]]
-inputVectorsBTurn = [[353.0, 670.0, 1],
+inputVectorsYTurn = [[353.0, 670.0, 1],
                     [377.0, 1330.0, 1],
                     [351.0, 2150.0, 1],
                     [779.0, 3230.0, 1],
@@ -70,7 +70,8 @@ inputVectorsBTurn = [[353.0, 670.0, 1],
                     [3800.0, 5700.0, 1],
                     [3810.0, 6300.0, 1]]
 
-car = [300,1500]
+car = [300,1500] # Car position will probably be constant in this module. Used to ajust spline to get correct 'current' steering angle.
+                 # Because the first angle of the spline is almost never correct, the spline is also made on some past cones.
 
 def closestNP(vectorListA, vectorListB):########### Sort two point lists based on distance from car(0,0) ############
     # time_start = time.time()
@@ -101,6 +102,19 @@ def closestNP(vectorListA, vectorListB):########### Sort two point lists based o
     # print(vectorListA)
     # print(vectorListB)
     return vectorListA, vectorListB
+
+def closestNP1(vectorList):########### Sort two point lists based on distance from car(0,0) ############
+    vectorList = copy.deepcopy(vectorList)
+    for i, vector in enumerate(vectorList):
+        result = np.sqrt(vector[0]**2 + vector[1]**2)
+        if i < len(vectorList)-1:
+            nextVector = vectorList[i+1]
+            nextDist = np.sqrt((vector[0] - nextVector[0])**2 + (vector[1] - nextVector[1])**2)
+        else:
+            nextDist = 1000
+        vectorList[i].extend([result, nextDist])
+    vectorList = np.array(sorted(vectorList, key=lambda x: x[-2]))
+    return vectorList
 
 def closestPandasQuick(localVectorListA, localVectorListB):
     time_start = time.time()
@@ -164,7 +178,7 @@ def calculateCenters(distanceListA, distanceListB):############# Canculate cente
     return centers
 
 
-def BSpline1232():
+def BSpline1232(): #### Some potential optimizations for BSpline #######
     # x = points[:,0]
     # y = points[:,1]
 
@@ -183,60 +197,6 @@ def BSpline1232():
     # t_fine = np.linspace(0, 1, 800)
     # x_smooth = spl_x(t_fine)
     # y_smooth = spl_y(t_fine)
-
-
-def BSpline2(points):
-    """
-    points: Nx2 numpy array of centerline points
-    smoothing: spline smoothing factor
-    k: spline degree (3=cubic, 5=quintic)
-    """
-
-    # ──────────────────────────────────────────────
-    # 1. Force the spline to have a correct start direction
-    #    We insert a ghost point 1m in front of the car (0,0 → 0,1)
-    # ──────────────────────────────────────────────
-
-
-    # ──────────────────────────────────────────────
-    # 2. Chord-length parameterization (important!)
-    # ──────────────────────────────────────────────
-    d = np.linalg.norm(np.diff(points, axis=0), axis=1)
-    t = np.concatenate(([0], np.cumsum(d)))
-    t /= t[-1]  # normalize to 0–1
-
-    # ──────────────────────────────────────────────
-    # 3. Build spline
-    # ──────────────────────────────────────────────
-    tck, u = splprep([points[:, 0], points[:, 1]],
-                     u=t,
-                     s=0,
-                     k=3)
-
-    # Evaluation points (you can adjust resolution)
-    u_fine = np.linspace(0, 1, 1000)
-
-    # Spline and derivatives
-    x,  y   = splev(u_fine, tck)
-    dx, dy  = splev(u_fine, tck, der=1)
-    ddx, ddy = splev(u_fine, tck, der=2)
-
-    # ──────────────────────────────────────────────
-    # 4. Curvature
-    # κ = (x' y'' – y' x'') / (x'^2 + y'^2)^(3/2)
-    # ──────────────────────────────────────────────
-    speed = np.sqrt(dx**2 + dy**2)
-    curvature = (dx * ddy - dy * ddx) / (speed**3 + 1e-9)
-
-    # ──────────────────────────────────────────────
-    # 5. Velocity profile
-    #    max speed ∝ 1 / sqrt(|κ|)
-    # ──────────────────────────────────────────────
-    vmax = np.sqrt(1 / (np.abs(curvature) + 1e-6))
-    vmax = np.clip(vmax, 0, 80)
-
-    return vmax, curvature, x, y, dx, dy
-
 
 def BSpline(points):########### Make and fit Basis-spline ############### 
     d = 0
@@ -277,7 +237,9 @@ time_start = time.time() # start time for measuring perfomance
 
 ############## Program ##################
 
-distanceListB, distanceListY = closestNP(inputVectorsYTurn, inputVectorsBTurn)
+# distanceListY, distanceListB = closestNP(inputVectorsYTurn, inputVectorsBTurn)
+distanceListY = closestNP1(inputVectorsYTurn)
+distanceListB = closestNP1(inputVectorsBTurn)
 # distanceLista, distanceListd = closestPandasQuick(inputVectorsB, inputVectorsY)
 # distanceLista, distanceListd = closestPandasSimple(inputVectorsB, inputVectorsY)
 
