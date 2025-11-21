@@ -123,37 +123,37 @@ def translate_cone_vectors_to_global_coordinates(frames, match_threshold=3000, m
 
 
 # Load dataset
-df = pd.read_csv(fr"Base\MR113_Position\nascar_track_cones_dataset_synth.csv")
+# df = pd.read_csv(fr"Base\MR113_Position\nascar_track_cones_dataset_synth.csv")
 
-# Camera parameters
-fov = 90
-image_width = 1280
-image_height = 720
+# # Camera parameters
+# fov = 90
+# image_width = 1280
+# image_height = 720
 
-# Step 1: Process frames into local cone positions
-frames = []
-for frame_idx, group in df.groupby("frame"):
-    coordinates_list = group[["pixel_x", "pixel_y"]].values
-    depth_list = group["depth_mm"].values
-    processed_list = one_frame_cone_positions(coordinates_list, depth_list, fov, image_width, image_height)
-    frames.append(processed_list)
+# # Step 1: Process frames into local cone positions
+# frames = []
+# for frame_idx, group in df.groupby("frame"):
+#     coordinates_list = group[["pixel_x", "pixel_y"]].values
+#     depth_list = group["depth_mm"].values
+#     processed_list = one_frame_cone_positions(coordinates_list, depth_list, fov, image_width, image_height)
+#     frames.append(processed_list)
 
-# Step 2: Compute global trajectory
-_, trajectory = translate_cone_vectors_to_global_coordinates(frames)
+# # Step 2: Compute global trajectory
+# _, trajectory = translate_cone_vectors_to_global_coordinates(frames)
 
-# Step 3: Plot interactive trajectory
-fig = go.Figure()
-fig.add_trace(go.Scatter(
-    x=trajectory[:, 0],
-    y=trajectory[:, 1],
-    mode='lines+markers',
-    name='Vehicle Path'
-))
-fig.update_layout(
-    title='Live Vehicle Trajectory on NASCAR Track',
-    xaxis_title='X Position (mm)',
-    yaxis_title='Y Position (mm)',
-    xaxis=dict(scaleanchor="y", scaleratio=1),
-    template='plotly_dark'
-)
-fig.show()
+# # Step 3: Plot interactive trajectory
+# fig = go.Figure()
+# fig.add_trace(go.Scatter(
+#     x=trajectory[:, 0],
+#     y=trajectory[:, 1],
+#     mode='lines+markers',
+#     name='Vehicle Path'
+# ))
+# fig.update_layout(
+#     title='Live Vehicle Trajectory on NASCAR Track',
+#     xaxis_title='X Position (mm)',
+#     yaxis_title='Y Position (mm)',
+#     xaxis=dict(scaleanchor="y", scaleratio=1),
+#     template='plotly_dark'
+# )
+# fig.show()
