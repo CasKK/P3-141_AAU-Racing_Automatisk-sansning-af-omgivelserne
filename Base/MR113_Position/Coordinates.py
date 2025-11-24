@@ -57,9 +57,6 @@ def one_frame_cone_positions(coordinates_list, depth_list, fov, image_width, ima
 
     return Processed_list
 
-import pandas as pd
-import numpy as np
-import plotly.graph_objects as go
 
 # Track cones across frames and compute global position
 def translate_cone_vectors_to_global_coordinates(frames, match_threshold=3000, max_missing_frames=5):
