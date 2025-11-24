@@ -35,13 +35,13 @@ from scipy.interpolate import splprep, splev, make_lsq_spline
 #                 [377.0, 4490.0, 1]]
 
 ##### Original turn #######
-inputVectorsBTurn = [[-368.0, 540.0, 0],
+inputVectorsYTurn = [[-368.0, 540.0, 0],
                     [-365.0, 1100.0, 0],
                     [-403.0, 2250.0, 0],
                     [-1.0, 3680.0, 0],
                     [1044.0, 4540.0, 0],
                     [1847.0, 4690.0, 0]]
-inputVectorsYTurn = [[353.0, 670.0, 1],
+inputVectorsBTurn = [[353.0, 670.0, 1],
                     [377.0, 1330.0, 1],
                     [351.0, 2150.0, 1],
                     [779.0, 3230.0, 1],
@@ -49,7 +49,7 @@ inputVectorsYTurn = [[353.0, 670.0, 1],
                     [1977.0, 3890.0, 1]]
 
 ####### Expanded turn #########
-inputVectorsBTurn = [[-368.0, 540.0, 0],
+inputVectorsYTurn = [[-368.0, 540.0, 0],
                     [-365.0, 1100.0, 0],
                     [-403.0, 2250.0, 0],
                     [-1.0, 3680.0, 0],
@@ -59,7 +59,7 @@ inputVectorsBTurn = [[-368.0, 540.0, 0],
                     [2900.0, 5200.0, 0],
                     [3000.0, 5600.0, 0],
                     [2910.0, 6300.0, 0]]
-inputVectorsYTurn = [[353.0, 670.0, 1],
+inputVectorsBTurn = [[353.0, 670.0, 1],
                     [377.0, 1330.0, 1],
                     [351.0, 2150.0, 1],
                     [779.0, 3230.0, 1],
@@ -73,37 +73,7 @@ inputVectorsYTurn = [[353.0, 670.0, 1],
 car = [300,1500] # Car position will probably be constant in this module. Used to ajust spline to get correct 'current' steering angle.
                  # Because the first angle of the spline is almost never correct, the spline is also made on some past cones.
 
-def closestNP(vectorListA, vectorListB):########### Sort two point lists based on distance from car(0,0) ############
-    # time_start = time.time()
-    vectorListA = copy.deepcopy(vectorListA)
-    vectorListB = copy.deepcopy(vectorListB)
-    for i, vector in enumerate(vectorListA):
-        result = np.sqrt(vector[0]**2 + vector[1]**2)
-        if i < len(vectorListA)-1:
-            nextVector = vectorListA[i+1]
-            nextDist = np.sqrt((vector[0] - nextVector[0])**2 + (vector[1] - nextVector[1])**2)
-        else:
-            nextDist = 1000
-        vectorListA[i].extend([result, nextDist])
-        
-    for i, vector in enumerate(vectorListB):
-        result = np.sqrt(vector[0]**2 + vector[1]**2)
-        if i < len(vectorListB)-1:
-            nextVector = vectorListB[i+1]
-            nextDist = np.sqrt((vector[0] - nextVector[0])**2 + (vector[1] - nextVector[1])**2)
-        else:
-            nextDist = 1000
-        vectorListB[i].extend([result, nextDist])
-    vectorListA = np.array(sorted(vectorListA, key=lambda x: x[-2]))
-    vectorListB = np.array(sorted(vectorListB, key=lambda x: x[-2]))
-
-    # time_end = time.time()
-    # print(f"Runtime: {time_end - time_start:.4f} seconds")
-    # print(vectorListA)
-    # print(vectorListB)
-    return vectorListA, vectorListB
-
-def closestNP1(vectorList):########### Sort two point lists based on distance from car(0,0) ############
+def closestNP1(vectorList):########### Sort point list based on distance from (0,0) ############
     vectorList = copy.deepcopy(vectorList)
     for i, vector in enumerate(vectorList):
         result = np.sqrt(vector[0]**2 + vector[1]**2)
@@ -115,49 +85,6 @@ def closestNP1(vectorList):########### Sort two point lists based on distance fr
         vectorList[i].extend([result, nextDist])
     vectorList = np.array(sorted(vectorList, key=lambda x: x[-2]))
     return vectorList
-
-def closestPandasQuick(localVectorListA, localVectorListB):
-    time_start = time.time()
-    localVectorListA = copy.deepcopy(localVectorListA)
-    localVectorListB = copy.deepcopy(localVectorListB)
-
-    for i, vector in enumerate(localVectorListA):
-        result = np.sqrt(vector[0]**2 + vector[1]**2)
-        if i < len(localVectorListA)-1:
-            nextVector = localVectorListA[i+1]
-            nextDist = np.sqrt((vector[0] - nextVector[0])**2 + (vector[1] - nextVector[1])**2)
-            localVectorListA[i] += [result]
-            localVectorListA[i] += [nextDist]
-    for i, vector in enumerate(localVectorListB):
-        result = np.sqrt(vector[0]**2 + vector[1]**2)
-        if i < len(localVectorListB)-1:
-            nextVector = localVectorListB[i+1]
-            nextDist = np.sqrt((vector[0] - nextVector[0])**2 + (vector[1] - nextVector[1])**2)
-            localVectorListB[i].extend([result, nextDist])
-    df1 = pd.DataFrame(localVectorListA, columns=['x', 'y', 'color', 'distanceCar', 'distanceNext'])
-    df2 = pd.DataFrame(localVectorListB, columns=['x', 'y', 'color', 'distanceCar', 'distanceNext'])
-
-    time_end = time.time()
-    print(f"Runtime: {time_end - time_start:.4f} seconds")
-    # print(df1)
-    # print(df2)
-    return df1, df2
-
-def closestPandasSimple(localVectorListA, localVectorListB):
-    time_start = time.time()
-
-    df1 = pd.DataFrame(localVectorListA, columns=['x', 'y', 'color'])
-    df2 = pd.DataFrame(localVectorListB, columns=['x', 'y', 'color'])
-    df1['distanceCar'] = np.sqrt(df1['x']**2 + df1['y']**2)
-    df2['distanceCar'] = np.sqrt(df2['x']**2 + df2['y']**2)
-    df1['dist_to_next'] = np.sqrt((df1['x'].shift(-1) - df1['x'])**2 + (df1['y'].shift(-1) - df1['y'])**2)
-    df2['dist_to_next'] = np.sqrt((df2['x'].shift(-1) - df2['x'])**2 + (df2['y'].shift(-1) - df2['y'])**2)
-
-    time_end = time.time()
-    print(f"Runtime: {time_end - time_start:.4f} seconds")
-    print(df1)
-    print(df2)
-    return df1, df2
 
 
 def calculateCenters(distanceListA, distanceListB):############# Canculate center points from two point lists ############
@@ -177,26 +104,6 @@ def calculateCenters(distanceListA, distanceListB):############# Canculate cente
     # print(centers)
     return centers
 
-
-def BSpline1232(): #### Some potential optimizations for BSpline #######
-    # x = points[:,0]
-    # y = points[:,1]
-
-    # d = np.sqrt(np.diff(x)**2 + np.diff(y)**2)
-    # t = np.concatenate([[0], np.cumsum(d)])
-
-    print("something")
-
-    # # cubic
-    # k = 3
-    # # smoothing: fewer knots → more smooth
-    # num_knots = 12
-    # knots = np.linspace(0, 1, num_knots)[1:-1]
-    # spl_x = make_lsq_spline(t, points[:,0], knots, k)
-    # spl_y = make_lsq_spline(t, points[:,1], knots, k)
-    # t_fine = np.linspace(0, 1, 800)
-    # x_smooth = spl_x(t_fine)
-    # y_smooth = spl_y(t_fine)
 
 def BSpline(points):########### Make and fit Basis-spline ############### 
     d = 0
@@ -221,7 +128,7 @@ def BSpline(points):########### Make and fit Basis-spline ###############
     #v_target = np.convolve(v_max, np.ones(50)/10, mode='same')
     return v_max, kp, x_u, y_u, dx_u, dy_u #np.array([dx_u, dy_u]), np.array([ddx_u, ddy_u])
 
-def closestPoint(listA, listB): # Find the list index of the closest point to the car  
+def carClosestPoint(listA, listB): # Find the list index of the closest point to the car  
     newList = []
     for i, (x, y) in enumerate(zip(listA, listB)):
         nextDist = np.sqrt((x - car[0])**2 + (y - car[1])**2)
@@ -237,22 +144,19 @@ time_start = time.time() # start time for measuring perfomance
 
 ############## Program ##################
 
-# distanceListY, distanceListB = closestNP(inputVectorsYTurn, inputVectorsBTurn)
-distanceListY = closestNP1(inputVectorsYTurn)
-distanceListB = closestNP1(inputVectorsBTurn)
-# distanceLista, distanceListd = closestPandasQuick(inputVectorsB, inputVectorsY)
-# distanceLista, distanceListd = closestPandasSimple(inputVectorsB, inputVectorsY)
+distanceSortedPointsB = closestNP1(inputVectorsBTurn)
+distanceSortedPointsY = closestNP1(inputVectorsYTurn)
 
-# for distance in distanceListB:
-#     distance[0] += 300
-# for distance in distanceListY:
-#     distance[0] += 300
+# for point in distanceSortedPointsY: # To offset the whole track in x direction for testing purposes
+#     point[0] += 300
+# for point in distanceSortedPointsY:
+#     point[0] += 300
 
-centers = calculateCenters(distanceListB, distanceListY)
+centers = calculateCenters(distanceSortedPointsB, distanceSortedPointsY)
 
 s, kp, x_smooth, y_smooth, dx_u, dy_u = BSpline(centers)
 
-closest_u = closestPoint(x_smooth, y_smooth)
+closest_u = carClosestPoint(x_smooth, y_smooth)
 L = 480
 steering = np.arctan(L * kp)
 
@@ -302,8 +206,8 @@ print("steering (deg):", np.degrees(steer_now))
 # fig.show()
 
 plt.figure(figsize=(8,8))
-plt.scatter(distanceListY[:, 0], distanceListY[:, 1], c='blue', label='distanceListA')
-plt.scatter(distanceListB[:, 0], distanceListB[:, 1], c='yellow', edgecolor='black', label='distanceListB')
+plt.scatter(distanceSortedPointsY[:, 0], distanceSortedPointsY[:, 1], c='yellow', edgecolor='black', label='distanceListA')
+plt.scatter(distanceSortedPointsB[:, 0], distanceSortedPointsB[:, 1], c='blue', edgecolor='black', label='distanceListB')
 plt.scatter(centers[:,0], centers[:,1], color='red', label="Original waypoints")
 #plt.scatter(x_smooth, y_smooth, color='red', label="smooth waypoints")
 plt.plot(x_smooth, y_smooth, label="Smoothed B-spline fit", linewidth=2)
