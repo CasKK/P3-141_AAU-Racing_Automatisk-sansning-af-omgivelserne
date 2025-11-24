@@ -6,6 +6,7 @@ import matplotlib.pyplot as plt
 import math
 
 lastAngle = 0
+car = [0, 0]
 
 # Following Code Will, use an input image coordinate and depth to generate xy vector to a cone for a Driverless Vehicle
 
@@ -68,19 +69,31 @@ def matchPoints(points, oldPoints, maxDist = 300*300):
             pointList.append([dist, i, j])
     pointList = np.array(sorted(pointList, key=lambda x: x[0]))
 
-    for dist, i, j in pointList:
+    for dist, i, j in pointList: # Match points
         if dist > maxDist:
             break
         if j not in updated:
             oldPoints[int(j)][0:2] = points[int(i)][0:2]
             updated.add(j)
+    for i in points: # Add new points
+        if i not in oldPoints:
+            oldPoints.append(i)
+            updated.add(len(oldPoints)-1)
+    for i, oldPoint in enumerate(oldPoints): # Move old points
+        if i not in updated:
+            rotatePointAroundPoint(oldPoint, car, currentAngle)
+            movePoint(oldPoint, distance)
+            updated.add(i)
+
+
+
     # print(pointList)
 
 def rotatePointsAroundPoint(points, car, angle):
     x = points[:,0]
     y = points[:,1]
-    lastAngle = angle
-    angle = lastAngle - angle
+    lastAngle = angle           #################
+    angle = lastAngle - angle   #################
     cos = math.cos(angle)
     sin = math.sin(angle)
     for n in range(len(x)):
@@ -89,9 +102,23 @@ def rotatePointsAroundPoint(points, car, angle):
         x[n] = temp
     return
 
+def rotatePointAroundPoint(point, car, angle):
+    x = point[0]
+    y = point[1]
+    lastAngle = angle           #################
+    angle = lastAngle - angle   #################
+    cos = math.cos(angle)
+    sin = math.sin(angle)
+    temp = ((x-car[0])*cos - (y-car[1])*sin) + car[0]
+    y = ((x-car[0])*sin + (y-car[1])*cos) + car[1]
+    x = temp
+    return
+
 def movePoints(oldPoints, distance):
     oldPoints[:, 1] -= distance
 
+def movePoint(oldPoint, distance):
+    oldPoint[1] -= distance
 
 
 
