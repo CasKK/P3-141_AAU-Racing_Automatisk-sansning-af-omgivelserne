@@ -2,13 +2,10 @@
 # Cone detection algorithm
 
 
-
 #WHAT NEEDS TO BE IMPLEMENTED AND IMPORVED
 # Better noise reduction and/or filtering, it still locates too much noise, especially from blue color
 # Center positions needs to be exported as a vector with space for distance
 # improve merge function so there is not a hard limit on what the distance is, it might interfere with other cones in the distance
-# 
-
 
 
 import numpy as np
@@ -25,9 +22,9 @@ def Setup():
     lowerLimitYellow = np.array([13,120,120], np.uint8)
     return cam, upperLimitBlue, lowerLimitBlue, upperLimitYellow, lowerLimitYellow
 
-def sobel_edge_detection(frame):
+def sobel_edge_detection(frame, HSV):
     #splitting hsv pictures 
-    h, s, v = cv2.split(cv2.cvtColor(frame, cv2.COLOR_BGR2HSV))
+    v = HSV[:, :, 2]
     
     frame_blur = cv2.GaussianBlur(v, (7,7), 0) 
 
@@ -107,7 +104,7 @@ def Masking(frame, blueUpper, blueLower, yellowUpper, yellowLower):
         maskYellow = cv2.morphologyEx(maskYellow, cv2.MORPH_OPEN, kernel, iterations=2)
         maskYellow = cv2.morphologyEx(maskYellow, cv2.MORPH_CLOSE, kernel, iterations=2)
         maskYellow = cv2.medianBlur(maskYellow, 5)
-        return maskBlue, maskYellow
+        return HSV, maskBlue, maskYellow
 
 # Find the contours from in the masks to find objects
 # This is performed on each mask and separated so the colors of each contour is found
@@ -120,10 +117,10 @@ def FindContours(maskBlue, maskYellow):
     def FilterBbox(contours, bbox):
         #Gennemgår alle konturer fundet i et maskeret billede
         for c in contours:
-            #Beregn arealet af konturen i pixelsd
+            #Beregn arealet af konturen i pixels
             area = cv2.contourArea(c)
-            if area > 100: #100 pixel^2 - skal være større end 100 pixels
-                #Bregen den kovekse skal af kontiren (mindste konvekse fporm der omslutter konturen)
+            if area > 1500: #100 pixel^2 - skal være større end 100 pixels
+                #Bregen den kovekse skal af konturen (mindste konvekse form der omslutter konturen)
                 hull = cv2.convexHull(c)
                 #Arealet af den kovekse skal
                 hull_area = cv2.contourArea(hull)
@@ -217,7 +214,7 @@ def verify_cones_with_edges(bboxes, edges, threshold=0.30):
         x, y, w, h = map(int, box)
 
         #Udtræk regionen af interesse (ROI) fra edge-billedet
-        #Det vil sige kund et område hvor bbox'en ligger
+        #Det vil sige kun det område hvor bbox'en ligger
         roi = edges[y:y+h, x:x+w]
         
         #Tæl hvor mange pixels i ROI der faktsik kanter (ikke-nul pixels)
@@ -248,13 +245,21 @@ def main():
             print("Can't read camera, ending stream")
             break
         
-        gradient_magnitude, v = sobel_edge_detection(frame)
+
+        # Get the masks created in Masking()
+        HSV, maskBlue, maskYellow = Masking(frame, blueUpper, blueLower, yellowUpper, yellowLower)
+        
+        gradient_magnitude, v = sobel_edge_detection(frame, HSV)
         edges = canny_edge_detection(v)
+
+        # uses the masks in found Contours to find the locations of objects
+        bboxesBlue, bboxesYellow = FindContours(maskBlue, maskYellow)
+        # Checks if it has found any Blue and Yellow BBoxes, before trying to draw them
+        
 
         #combinere sobel og canny edge qdetection
         combine = cv2.bitwise_or(gradient_magnitude, edges)
 
-    
     
         #Lav binært bilelde med morphology
         binary = morphology(combine)
@@ -262,13 +267,6 @@ def main():
         # Remove små objekter hurtigt med contour-filter (erstatter connectedComponents)
         cleaned_mask, kept_contours = remove_small_objects_with_contours(binary, min_area=250)
 
-
-        # Get the masks created in Masking()
-        maskBlue, maskYellow = Masking(frame, blueUpper, blueLower, yellowUpper, yellowLower)
-        # uses the masks in found Contours to find the locations of objects
-        bboxesBlue, bboxesYellow = FindContours(maskBlue, maskYellow)
-        # Checks if it has found any Blue and Yellow BBoxes, before trying to draw them
-        
         edge_contours, _ = cv2.findContours(edges, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
         cv2.drawContours(frame, edge_contours, -1, (0, 0, 255), 3)
 
@@ -289,11 +287,11 @@ def main():
             cv2.putText(frame, "Edge-verified", (int(boxy[0]), int(boxy[1]-20)), 
                         cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0,255,255), 1)
         
-       
+
+        cv2.imshow("frame", frame)
         cv2.imshow("Frame with boxes and edges", cleaned_mask)
         # Show the combined mask and frame with bboxes
         #cv2.imshow("mask", mask)
-        cv2.imshow("frame", frame)
         # prints FPS
         print(f"FPS: {fps}")
         if cv2.waitKey(1) == ord('q'):
