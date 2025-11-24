@@ -4,7 +4,8 @@ import pandas as pd
 import numpy as np
 import plotly.graph_objects as go
 import matplotlib.pyplot as plt
-
+import math
+import copy
 
 
 # Following Code Will, use an input image coordinate and depth to generate xy vector to a cone for a Driverless Vehicle
@@ -57,6 +58,42 @@ def one_frame_cone_positions(coordinates_list, depth_list, fov, image_width, ima
     print(Processed_list)
 
     return Processed_list
+
+
+def matchPoints(points, oldPoints, maxDist = 300*300):
+    pointList = []
+    updated = set()
+    # oldPoints = copy.deepcopy(oldPoints)
+    for i, point in enumerate(points):
+        for j, oldPoint in enumerate(oldPoints):
+            dist = (oldPoint[0] - point[0])**2 + (oldPoint[1] - point[1])**2
+            pointList.append([dist, i, j])
+    pointList = np.array(sorted(pointList, key=lambda x: x[0]))
+
+    for dist, i, j in pointList:
+        if dist > maxDist:
+            break
+        if j not in updated:
+            oldPoints[int(j)][0:2] = points[int(i)][0:2]
+            updated.add(j)
+
+
+    print(pointList)
+
+def rotatePointsAroundPoint(points, car, angle):
+    x = points[:,0]
+    y = points[:,1]
+    cos = math.cos(angle)
+    sin = math.sin(angle)
+    for n in range(len(x)):
+        temp = ((x[n]-car[0])*cos - (y[n]-car[1])*sin) + car[0]
+        y[n] = ((x[n]-car[0])*sin + (y[n]-car[1])*cos) + car[1]
+        x[n] = temp
+    return
+
+
+
+
 
 
 # Track cones across frames and compute global position
@@ -121,20 +158,33 @@ def translate_cone_vectors_to_global_coordinates(frames, match_threshold=3000, m
 
 
 # Load dataset
-# df = pd.read_csv(fr"Base\MR113_Position\nascar_track_cones_dataset_synth.csv")
+df = pd.read_csv(fr"MR113_Position\nascar_track_cones_dataset_synth3.csv")
+plt.scatter(df["pixel_x"], df["pixel_y"], c='yellow', edgecolors='black', label='Pixel')
+plt.axis('equal')
+plt.show()
+# Camera parameters
+fov = 90
+image_width = 1280
+image_height = 720
 
-# # Camera parameters
-# fov = 90
-# image_width = 1280
-# image_height = 720
+# Step 1: Process frames into local cone positions
+coordinates_list = []
+processed_list = []
+frames = []
+for frame_idx, group in df.groupby("frame"):
+    coordinates_list = group[["pixel_x", "pixel_y"]].values
+    depth_list = group["depth_mm"].values
 
-# # Step 1: Process frames into local cone positions
-# frames = []
-# for frame_idx, group in df.groupby("frame"):
-#     coordinates_list = group[["pixel_x", "pixel_y"]].values
-#     depth_list = group["depth_mm"].values
-#     processed_list = one_frame_cone_positions(coordinates_list, depth_list, fov, image_width, image_height)
-#     frames.append(processed_list)
+    processed_list = one_frame_cone_positions(coordinates_list, depth_list, fov, image_width, image_height)
+    
+
+    frames.append(processed_list)
+
+plt.scatter(processed_list[:,0], processed_list[:,1], c='yellow', edgecolors='black', label='Pixel')
+plt.axis('equal')
+plt.show()
+
+matchPoints(processed_list, processed_list)
 
 # # Step 2: Compute global trajectory
 # _, trajectory = translate_cone_vectors_to_global_coordinates(frames)

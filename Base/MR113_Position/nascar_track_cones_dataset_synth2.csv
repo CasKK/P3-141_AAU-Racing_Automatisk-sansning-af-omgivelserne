@@ -1,0 +1,10 @@
+frame,pixel_x,pixel_y,depth_mm,cone_type
+0,36,300,500,left
+0,1240,300,500,right
+0,370,450,1500,left
+0,850,450,1500,right
+0,470,550,2500,left
+0,750,550,2500,right
+0,520,666,3500,left
+0,700,666,3500,right
+

@@ -104,3 +104,63 @@ def BSpline1232(): #### Some potential optimizations for BSpline #######
 # distanceListY, distanceListB = closestNP(inputVectorsYTurn, inputVectorsBTurn)
 # distanceLista, distanceListd = closestPandasQuick(inputVectorsB, inputVectorsY)
 # distanceLista, distanceListd = closestPandasSimple(inputVectorsB, inputVectorsY)
+
+
+
+
+
+
+
+
+############################ Polyfit ###################################
+
+# from scipy.interpolate import lagrange
+
+# degree = 2
+# coeffs = np.polyfit(centers[:, 0], centers[:, 1], degree)
+# p = np.poly1d(coeffs)
+# # p = lagrange(centers[:, 0], centers[:, 1])
+
+# # Make a smooth range of x-values for plotting the curve
+# x_plot = np.linspace(min(centers[:, 0]), max(centers[:, 0]), 200)
+# y_plot = p(x_plot)
+
+# # Plot
+# plt.scatter(centers[:, 0], centers[:, 1], label='Data Points')   # original points
+# plt.plot(x_plot, y_plot, label='Polynomial Fit')
+
+# plt.legend()
+# plt.xlabel("x")
+# plt.ylabel("y")
+# plt.title("Polynomial Fit")
+# plt.grid(True)
+# plt.show()
+
+
+######################## 'pass-by-value' vs 'pass-by-reference'? mby... test #############################
+
+# inputA =    [[-350.13, 50.90, "blue"],
+#             [-350.34, 100.90, "blue"],
+#             [-350.56, 200.90, "blue"],
+#             [-350.13, 250.90, "blue"],
+#             [-350.34, 300.90, "blue"],
+#             [-350.56, 400.90, "blue"]]
+
+# print(inputA)
+
+# def someFunction(localInputA):
+#     for i, vector in enumerate(localInputA):
+#         result = vector[0] + 350
+#         localInputA[i] += [result]
+#     return localInputA
+
+# someVar = someFunction(inputA)
+
+# print(inputA)
+# print(someVar)
+
+# # result:
+# # [[-350.13, 50.9, 'blue'], [-350.34, 100.9, 'blue'], [-350.56, 200.9, 'blue'], [-350.13, 250.9, 'blue'], [-350.34, 300.9, 'blue'], [-350.56, 400.9, 'blue']]
+# # [[-350.13, 50.9, 'blue', -0.12999999999999545], [-350.34, 100.9, 'blue', -0.339999999999975], [-350.56, 200.9, 'blue', -0.5600000000000023], [-350.13, 250.9, 'blue', -0.12999999999999545], [-350.34, 300.9, 'blue', -0.339999999999975], [-350.56, 400.9, 'blue', -0.5600000000000023]]
+# # [[-350.13, 50.9, 'blue', -0.12999999999999545], [-350.34, 100.9, 'blue', -0.339999999999975], [-350.56, 200.9, 'blue', -0.5600000000000023], [-350.13, 250.9, 'blue', -0.12999999999999545], [-350.34, 300.9, 'blue', -0.339999999999975], [-350.56, 400.9, 'blue', -0.5600000000000023]]
+

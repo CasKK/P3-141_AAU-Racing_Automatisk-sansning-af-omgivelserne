@@ -8,19 +8,6 @@ import plotly.express as px
 from scipy.interpolate import splprep, splev, make_lsq_spline
 
 
-# inputVectorsB = [[-350.13, 50.90, 0],
-#                 [-350.34, 100.90, 0],
-#                 [-350.56, 200.90, 0],
-#                 [-350.13, 250.90, 0],
-#                 [-350.34, 300.90, 0],
-#                 [-350.56, 420.90, 0]]
-# inputVectorsY = [[350.13, 40.90, 1],
-#                 [350.34, 100.90, 1],
-#                 [350.56, 200.90, 1],
-#                 [350.13, 250.90, 1],
-#                 [350.34, 300.90, 1],
-#                 [350.56, 400.90, 1]]
-
 # inputVectorsB = [[-368.0, 540.0, 0],
 #                 [-381.0, 2580.0, 0],
 #                 [-363.0, 2250.0, 0],
@@ -238,58 +225,5 @@ plt.axis('equal')
 #plt.legend()
 #plt.title("Smoothed racing line fit (B-spline with smoothing)")
 plt.show()
-
-
-############################ Polyfit ###################################
-
-# from scipy.interpolate import lagrange
-
-# degree = 2
-# coeffs = np.polyfit(centers[:, 0], centers[:, 1], degree)
-# p = np.poly1d(coeffs)
-# # p = lagrange(centers[:, 0], centers[:, 1])
-
-# # Make a smooth range of x-values for plotting the curve
-# x_plot = np.linspace(min(centers[:, 0]), max(centers[:, 0]), 200)
-# y_plot = p(x_plot)
-
-# # Plot
-# plt.scatter(centers[:, 0], centers[:, 1], label='Data Points')   # original points
-# plt.plot(x_plot, y_plot, label='Polynomial Fit')
-
-# plt.legend()
-# plt.xlabel("x")
-# plt.ylabel("y")
-# plt.title("Polynomial Fit")
-# plt.grid(True)
-# plt.show()
-
-
-######################## 'pass-by-value' vs 'pass-by-reference'? mby... test #############################
-
-# inputA =    [[-350.13, 50.90, "blue"],
-#             [-350.34, 100.90, "blue"],
-#             [-350.56, 200.90, "blue"],
-#             [-350.13, 250.90, "blue"],
-#             [-350.34, 300.90, "blue"],
-#             [-350.56, 400.90, "blue"]]
-
-# print(inputA)
-
-# def someFunction(localInputA):
-#     for i, vector in enumerate(localInputA):
-#         result = vector[0] + 350
-#         localInputA[i] += [result]
-#     return localInputA
-
-# someVar = someFunction(inputA)
-
-# print(inputA)
-# print(someVar)
-
-# # result:
-# # [[-350.13, 50.9, 'blue'], [-350.34, 100.9, 'blue'], [-350.56, 200.9, 'blue'], [-350.13, 250.9, 'blue'], [-350.34, 300.9, 'blue'], [-350.56, 400.9, 'blue']]
-# # [[-350.13, 50.9, 'blue', -0.12999999999999545], [-350.34, 100.9, 'blue', -0.339999999999975], [-350.56, 200.9, 'blue', -0.5600000000000023], [-350.13, 250.9, 'blue', -0.12999999999999545], [-350.34, 300.9, 'blue', -0.339999999999975], [-350.56, 400.9, 'blue', -0.5600000000000023]]
-# # [[-350.13, 50.9, 'blue', -0.12999999999999545], [-350.34, 100.9, 'blue', -0.339999999999975], [-350.56, 200.9, 'blue', -0.5600000000000023], [-350.13, 250.9, 'blue', -0.12999999999999545], [-350.34, 300.9, 'blue', -0.339999999999975], [-350.56, 400.9, 'blue', -0.5600000000000023]]
 
 
