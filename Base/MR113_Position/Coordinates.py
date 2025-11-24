@@ -1,12 +1,11 @@
 import numpy as np
 import cv2
 import pandas as pd
-import numpy as np
 import plotly.graph_objects as go
 import matplotlib.pyplot as plt
 import math
-import copy
 
+lastAngle = 0
 
 # Following Code Will, use an input image coordinate and depth to generate xy vector to a cone for a Driverless Vehicle
 
@@ -63,7 +62,6 @@ def one_frame_cone_positions(coordinates_list, depth_list, fov, image_width, ima
 def matchPoints(points, oldPoints, maxDist = 300*300):
     pointList = []
     updated = set()
-    # oldPoints = copy.deepcopy(oldPoints)
     for i, point in enumerate(points):
         for j, oldPoint in enumerate(oldPoints):
             dist = (oldPoint[0] - point[0])**2 + (oldPoint[1] - point[1])**2
@@ -76,13 +74,13 @@ def matchPoints(points, oldPoints, maxDist = 300*300):
         if j not in updated:
             oldPoints[int(j)][0:2] = points[int(i)][0:2]
             updated.add(j)
-
-
-    print(pointList)
+    # print(pointList)
 
 def rotatePointsAroundPoint(points, car, angle):
     x = points[:,0]
     y = points[:,1]
+    lastAngle = angle
+    angle = lastAngle - angle
     cos = math.cos(angle)
     sin = math.sin(angle)
     for n in range(len(x)):
@@ -91,7 +89,8 @@ def rotatePointsAroundPoint(points, car, angle):
         x[n] = temp
     return
 
-
+def movePoints(oldPoints, distance):
+    oldPoints[:, 1] -= distance
 
 
 
@@ -180,11 +179,14 @@ for frame_idx, group in df.groupby("frame"):
 
     frames.append(processed_list)
 
+
+rotatePointsAroundPoint(processed_list, (0,0), math.radians(90))
 plt.scatter(processed_list[:,0], processed_list[:,1], c='yellow', edgecolors='black', label='Pixel')
 plt.axis('equal')
 plt.show()
 
 matchPoints(processed_list, processed_list)
+
 
 # # Step 2: Compute global trajectory
 # _, trajectory = translate_cone_vectors_to_global_coordinates(frames)
