@@ -19,7 +19,7 @@ def pixel_to_relative_coordinates(coordinates, depth, fov, image_width, image_he
     # image_height: height of the image in pixels
 
     Image_centerline = image_width / 2
-    FOV_radians = np.deg2rad(fov)
+    FOV_radians = math.radians(fov)
 
     # Calculate the angle per pixel
     angle_per_pixel = FOV_radians / image_width
@@ -27,10 +27,10 @@ def pixel_to_relative_coordinates(coordinates, depth, fov, image_width, image_he
     angle_to_cone = pixel_offset * angle_per_pixel
 
     # Calcualte cone vector in vehicle coordinate
-    y_vector = depth * np.cos(angle_to_cone)
-    x_vector = depth * np.sin(angle_to_cone)
+    y_vector = depth * math.cos(angle_to_cone)
+    x_vector = depth * math.sin(angle_to_cone)
 
-    Relative_coordinate_array = np.array([x_vector, y_vector])
+    Relative_coordinate_array = [x_vector, y_vector + car[1]]
      # Return x,y + cone type
     return Relative_coordinate_array
 
@@ -47,11 +47,11 @@ def one_frame_cone_positions(coordinates_list, depth_list, fov, image_width, ima
     print(coordinates_list)
 
     #Define ouput list
-    Processed_list = np.zeros((len(coordinates_list), 2))
+    Processed_list = []
 
     #Iterate through each coordinate
     for i, vector in enumerate(coordinates_list):
-        Processed_list[i] = pixel_to_relative_coordinates(vector, depth_list[i], fov, image_width, image_height)
+        Processed_list.append(pixel_to_relative_coordinates(vector, depth_list[i], fov, image_width, image_height)) ######## Add cone type into the data here ##
     
     print(f"Output list")
     print(Processed_list)
@@ -59,26 +59,29 @@ def one_frame_cone_positions(coordinates_list, depth_list, fov, image_width, ima
     return Processed_list
 
 
-def matchPoints(points, oldPoints, maxDist = 300*300):
+def matchPoints(points, oldPoints, maxDist = 200*200):######################## COEFFICIENT HERE!!! #############
     pointList = []
     updated = set()
     for i, point in enumerate(points):
         for j, oldPoint in enumerate(oldPoints):
             dist = (oldPoint[0] - point[0])**2 + (oldPoint[1] - point[1])**2
-            pointList.append([dist, i, j])
-    pointList = np.array(sorted(pointList, key=lambda x: x[0]))
+            dist1 = (point[0])**2 + (point[1])**2
+            pointList.append([dist, i, j, dist1])
+    pointList = sorted(pointList, key=lambda x: x[0])# np.array( 
 
-    for dist, i, j in pointList: # Match points
-        if dist > maxDist:
+    for dist, i, j, dist1 in pointList: # Match points
+        if dist > maxDist + (dist1 * 0.005): ################################## COEFFICIENT HERE!!! #############
             break
         if j not in updated:
             oldPoints[int(j)][0:2] = points[int(i)][0:2]
             updated.add(j)
+    print(updated) ############## print ##########
     for i in points: # Add new points
         if i not in oldPoints:
             oldPoints.append(i)
             updated.add(len(oldPoints)-1)
-    # for i, oldPoint in enumerate(oldPoints): # Move old points
+    
+    # for i, oldPoint in enumerate(oldPoints): # Move old points # Old version
     #     if i not in updated:
     #         rotatePointAroundPoint(oldPoint, car, currentAngle)
     #         movePoint(oldPoint, distance)
@@ -89,17 +92,13 @@ def matchPoints(points, oldPoints, maxDist = 300*300):
     # print(pointList)
 
 def rotatePointsAroundPoint(points, car, angle):
-    x = points[:,0]
-    y = points[:,1]
-    lastAngle = angle           #################
-    angle = lastAngle - angle   #################
     cos = math.cos(angle)
     sin = math.sin(angle)
-    for n in range(len(x)):
-        temp = ((x[n]-car[0])*cos - (y[n]-car[1])*sin) + car[0]
-        y[n] = ((x[n]-car[0])*sin + (y[n]-car[1])*cos) + car[1]
-        x[n] = temp
-    return
+    for point in points:
+        x = point[0]
+        y = point[1]
+        point[0] = ((x-car[0])*cos - (y-car[1])*sin) + car[0]
+        point[1] = ((x-car[0])*sin + (y-car[1])*cos) + car[1]
 
 def rotatePointAroundPoint(point, car, angle):
     x = point[0]
@@ -114,10 +113,128 @@ def rotatePointAroundPoint(point, car, angle):
     return
 
 def movePoints(oldPoints, distance):
-    oldPoints[:, 1] -= distance
+    for i, point in enumerate(oldPoints):
+        point[1] -= distance
+        if point[1] < 0:
+            del oldPoints[i]           # removedPoint = points.pop(1)
 
 def movePoint(oldPoint, distance):
     oldPoint[1] -= distance
+
+
+
+
+
+################ Setup ##############
+"""Some things have to run before 'rotatePointsAroundPoint(oldPoints, car, currentAngle)' and 
+'movePoint(oldPoints, distance)' to make them function correctly."""
+
+# Camera parameters
+fov = 90
+image_width = 1280
+image_height = 720
+
+# Other initial parameters
+coordinates_list = [[36,300],       ######## Initial input from M111 #########
+                    [1240,300],     # Some 'random' coordinates for testing purposes as no real test data is available currently.
+                    [370,450],      # Replace with the initial incomming data.
+                    [850,450],      # Same goes for depth_list
+                    [470,550],
+                    [750,550],
+                    [520,666],
+                    [700,666]]                                  ###### getHeliosDistances(coordinates_list) initial start value #######
+depth_list = [500, 500, 1500, 1500, 2500, 2500, 3500, 3500]     # Some 'random' distances for testing purposes as no real test data is available currently.
+angle = 0                           # readGyro(z) initial start value
+lastAngle = 0                   # Initial "zero" / start orientation
+distance = 0                        # readEncoder() initial start value
+lastDistance = 0             # Initial "zero" / start encoder value
+car = [0, 1500]                     # Car position (constant, the world moves around the car)
+newPoints = one_frame_cone_positions(coordinates_list, depth_list, fov, image_width, image_height) # Initial frame of cones.
+oldPoints = [[300,1500],[-300,1500],[300,750],[-300,750],[300,1],[-300,1]] #,[300,6000],[-300,6000]] # Some initial old points behind the car to ensure correct b-spline.
+matchPoints(newPoints, oldPoints)
+
+
+################ Program (loop) ##############
+"""When new data is ready, the predicted cone locations are calculated (based on encoder and gyro/magno). 
+Then the old and new points are matched."""
+
+def main():
+    global lastAngle
+    global lastDistance
+
+    # coordinates_list = dataFromM111()                         ###### Input from M111 #########                   
+    # depth_list = getHeliosDistances(coordinates_list)         ###### Input from Helios #######
+
+    # angle = readGyro(z)                                       ###### Input from gyro/magno ##########
+    rotatePointsAroundPoint(oldPoints, car, angle - lastAngle)
+    lastAngle = angle
+
+    # distance = readEncoder()                                  ###### Input from encoder ##########
+    movePoints(oldPoints, distance - lastDistance)
+    lastDistance = distance
+
+    newPoints = one_frame_cone_positions(coordinates_list, depth_list, fov, image_width, image_height)
+
+    matchPoints(newPoints, oldPoints)
+    # Export 'oldPoints' to use later in pipeline (M121)
+
+
+################################################################
+
+
+
+newPoints1 = np.array(oldPoints)
+print(newPoints1)
+
+plt.scatter(newPoints1[:,0], newPoints1[:,1], c='yellow', edgecolors='black', label='Pixel')
+plt.axis('equal')
+plt.show()
+
+
+coordinates_list = [[36,280],       ######## Initial input from M111 #########
+                    [1240,280],     # Some 'random' coordinates for testing purposes as no real test data is available currently.
+                    [370,430],      # Replace with the initial incomming data.
+                    [850,430],      # Same goes for depth_list
+                    [470,530],
+                    [750,530],
+                    [520,646],
+                    [700,646]]                                  ###### getHeliosDistances(coordinates_list) initial start value #######
+depth_list = [450, 450, 1450, 1450, 2450, 2450, 3450, 3450]     # Some 'random' distances for testing purposes as no real test data is available currently.
+angle = math.radians(5)                           # readGyro(z) initial start value
+distance = 100                        # readEncoder() initial start value
+
+main()
+
+newPoints1 = np.array(oldPoints)
+print(newPoints1)
+
+plt.scatter(newPoints1[:,0], newPoints1[:,1], c='yellow', edgecolors='black', label='Pixel')
+plt.axis('equal')
+plt.show()
+
+
+
+coordinates_list = []                                  ###### getHeliosDistances(coordinates_list) initial start value #######
+depth_list = []     # Some 'random' distances for testing purposes as no real test data is available currently.
+angle = math.radians(10)                           # readGyro(z) initial start value
+distance = 200                        # readEncoder() initial start value
+
+main()
+
+newPoints1 = np.array(oldPoints)
+print(newPoints1)
+
+plt.scatter(newPoints1[:,0], newPoints1[:,1], c='yellow', edgecolors='black', label='Pixel')
+plt.axis('equal')
+plt.show()
+
+
+
+
+
+
+
+
 
 
 
@@ -181,7 +298,6 @@ def translate_cone_vectors_to_global_coordinates(frames, match_threshold=3000, m
 
     return global_position, np.array(trajectory)
 
-
 # Load dataset
 df = pd.read_csv(fr"MR113_Position\nascar_track_cones_dataset_synth3.csv")
 # plt.scatter(df["pixel_x"], df["pixel_y"], c='yellow', edgecolors='black', label='Pixel')
@@ -196,56 +312,6 @@ df = pd.read_csv(fr"MR113_Position\nascar_track_cones_dataset_synth3.csv")
 #     depth_list = group["depth_mm"].values
 #     processed_list = one_frame_cone_positions(coordinates_list, depth_list, fov, image_width, image_height)
 #     frames.append(processed_list)
-
-
-################ Setup ##############
-
-coordinates_list = [[36,300],        ######## Input from M111 #########
-                    [1240,300],
-                    [370,450],
-                    [850,450],
-                    [470,550],
-                    [750,550],
-                    [520,666],
-                    [700,666]]
-depth_list = [500, 500, 1500, 1500, 2500, 2500, 3500, 3500]   ###### getHeliosDistances(coordinates_list) #######
-
-
-# Camera parameters
-fov = 90
-image_width = 1280
-image_height = 720
-
-# Other Initial parameters
-lastAngle = 0
-car = [0, 0]#1500] # Car position
-oldPoints = one_frame_cone_positions(coordinates_list, depth_list, fov, image_width, image_height)
-
-
-################ Program (loop) ##############
-
-coordinates_list = [[36,300],        ######## Input from M111 #########
-                    [1240,300],
-                    [370,450],
-                    [850,450],
-                    [470,550],
-                    [750,550],
-                    [520,666],
-                    [700,666]]
-depth_list = [500, 500, 1500, 1500, 2500, 2500, 3500, 3500]   ###### getHeliosDistances(coordinates_list) #######
-currentAngle = 0                                              ###### readGyro(z)  ##########
-distance = 0                                                  ###### readEncoder() ##########
-
-rotatePointsAroundPoint(oldPoints, car, currentAngle)
-movePoint(oldPoints, distance)
-newPoints = one_frame_cone_positions(coordinates_list, depth_list, fov, image_width, image_height)
-
-matchPoints(newPoints, oldPoints)
-
-plt.scatter(newPoints[:,0], newPoints[:,1], c='yellow', edgecolors='black', label='Pixel')
-plt.axis('equal')
-plt.show()
-
 
 # # Step 2: Compute global trajectory
 # _, trajectory = translate_cone_vectors_to_global_coordinates(frames)

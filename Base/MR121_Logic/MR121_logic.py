@@ -57,7 +57,7 @@ inputVectorsBTurn = [[353.0, 670.0, 1],
                     [3800.0, 5700.0, 1],
                     [3810.0, 6300.0, 1]]
 
-car = [300,1500] # Car position will probably be constant in this module. Used to ajust spline to get correct 'current' steering angle.
+car = [0,1500] # Car position will probably be constant in this module. Used to ajust spline to get correct 'current' steering angle.
                  # Because the first angle of the spline is almost never correct, the spline is also made on some past cones.
 
 def closestNP1(vectorList):########### Sort point list based on distance from (0,0) ############
@@ -126,6 +126,7 @@ def carClosestPoint(listA, listB): # Find the list index of the closest point to
 ############## Pre program stuff #############
 
 temp = 500
+L = 480
 time_start = time.time() # start time for measuring perfomance
 
 
@@ -143,9 +144,8 @@ centers = calculateCenters(distanceSortedPointsB, distanceSortedPointsY)
 
 s, kp, x_smooth, y_smooth, dx_u, dy_u = BSpline(centers)
 
-closest_u = carClosestPoint(x_smooth, y_smooth)
-L = 480
-steering = np.arctan(L * kp)
+closest_u = carClosestPoint(x_smooth, y_smooth) # Find the index 
+steering = np.arctan(L * kp) # 3-line steering-angle bicycle formula
 
 
 ################# Post program stuff #####################
