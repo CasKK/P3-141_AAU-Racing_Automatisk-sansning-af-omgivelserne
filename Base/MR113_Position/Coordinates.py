@@ -5,8 +5,7 @@ import plotly.graph_objects as go
 import matplotlib.pyplot as plt
 import math
 
-lastAngle = 0
-car = [0, 0]
+
 
 # Following Code Will, use an input image coordinate and depth to generate xy vector to a cone for a Driverless Vehicle
 
@@ -79,11 +78,11 @@ def matchPoints(points, oldPoints, maxDist = 300*300):
         if i not in oldPoints:
             oldPoints.append(i)
             updated.add(len(oldPoints)-1)
-    for i, oldPoint in enumerate(oldPoints): # Move old points
-        if i not in updated:
-            rotatePointAroundPoint(oldPoint, car, currentAngle)
-            movePoint(oldPoint, distance)
-            updated.add(i)
+    # for i, oldPoint in enumerate(oldPoints): # Move old points
+    #     if i not in updated:
+    #         rotatePointAroundPoint(oldPoint, car, currentAngle)
+    #         movePoint(oldPoint, distance)
+    #         updated.add(i)
 
 
 
@@ -185,34 +184,67 @@ def translate_cone_vectors_to_global_coordinates(frames, match_threshold=3000, m
 
 # Load dataset
 df = pd.read_csv(fr"MR113_Position\nascar_track_cones_dataset_synth3.csv")
-plt.scatter(df["pixel_x"], df["pixel_y"], c='yellow', edgecolors='black', label='Pixel')
-plt.axis('equal')
-plt.show()
+# plt.scatter(df["pixel_x"], df["pixel_y"], c='yellow', edgecolors='black', label='Pixel')
+# plt.axis('equal')
+# plt.show()
+
+
+# # Step 1: Process frames into local cone positions
+# frames = []
+# for frame_idx, group in df.groupby("frame"):
+#     coordinates_list = group[["pixel_x", "pixel_y"]].values
+#     depth_list = group["depth_mm"].values
+#     processed_list = one_frame_cone_positions(coordinates_list, depth_list, fov, image_width, image_height)
+#     frames.append(processed_list)
+
+
+################ Setup ##############
+
+coordinates_list = [[36,300],        ######## Input from M111 #########
+                    [1240,300],
+                    [370,450],
+                    [850,450],
+                    [470,550],
+                    [750,550],
+                    [520,666],
+                    [700,666]]
+depth_list = [500, 500, 1500, 1500, 2500, 2500, 3500, 3500]   ###### getHeliosDistances(coordinates_list) #######
+
+
 # Camera parameters
 fov = 90
 image_width = 1280
 image_height = 720
 
-# Step 1: Process frames into local cone positions
-coordinates_list = []
-processed_list = []
-frames = []
-for frame_idx, group in df.groupby("frame"):
-    coordinates_list = group[["pixel_x", "pixel_y"]].values
-    depth_list = group["depth_mm"].values
-
-    processed_list = one_frame_cone_positions(coordinates_list, depth_list, fov, image_width, image_height)
-    
-
-    frames.append(processed_list)
+# Other Initial parameters
+lastAngle = 0
+car = [0, 0]#1500] # Car position
+oldPoints = one_frame_cone_positions(coordinates_list, depth_list, fov, image_width, image_height)
 
 
-rotatePointsAroundPoint(processed_list, (0,0), math.radians(90))
-plt.scatter(processed_list[:,0], processed_list[:,1], c='yellow', edgecolors='black', label='Pixel')
+################ Program (loop) ##############
+
+coordinates_list = [[36,300],        ######## Input from M111 #########
+                    [1240,300],
+                    [370,450],
+                    [850,450],
+                    [470,550],
+                    [750,550],
+                    [520,666],
+                    [700,666]]
+depth_list = [500, 500, 1500, 1500, 2500, 2500, 3500, 3500]   ###### getHeliosDistances(coordinates_list) #######
+currentAngle = 0                                              ###### readGyro(z)  ##########
+distance = 0                                                  ###### readEncoder() ##########
+
+rotatePointsAroundPoint(oldPoints, car, currentAngle)
+movePoint(oldPoints, distance)
+newPoints = one_frame_cone_positions(coordinates_list, depth_list, fov, image_width, image_height)
+
+matchPoints(newPoints, oldPoints)
+
+plt.scatter(newPoints[:,0], newPoints[:,1], c='yellow', edgecolors='black', label='Pixel')
 plt.axis('equal')
 plt.show()
-
-matchPoints(processed_list, processed_list)
 
 
 # # Step 2: Compute global trajectory
