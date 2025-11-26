@@ -30,7 +30,7 @@ def pixel_to_relative_coordinates(coordinates, depth, fov, image_width, image_he
     y_vector = depth * math.cos(angle_to_cone)
     x_vector = depth * math.sin(angle_to_cone)
 
-    Relative_coordinate_array = [x_vector, y_vector + car[1]]
+    Relative_coordinate_array = [x_vector, y_vector + car[1], coordinates[2]]
      # Return x,y + cone type
     return Relative_coordinate_array
 
@@ -123,8 +123,6 @@ def movePoint(oldPoint, distance):
 
 
 
-
-
 ################ Setup ##############
 """Some things have to run before 'rotatePointsAroundPoint(oldPoints, car, currentAngle)' and 
 'movePoint(oldPoints, distance)' to make them function correctly."""
@@ -135,14 +133,14 @@ image_width = 1280
 image_height = 720
 
 # Other initial parameters
-coordinates_list = [[36,300],       ######## Initial input from M111 #########
-                    [1240,300],     # Some 'random' coordinates for testing purposes as no real test data is available currently.
-                    [370,450],      # Replace with the initial incomming data.
-                    [850,450],      # Same goes for depth_list
-                    [470,550],
-                    [750,550],
-                    [520,666],
-                    [700,666]]                                  ###### getHeliosDistances(coordinates_list) initial start value #######
+coordinates_list = [[36,300, 0],       ######## Initial input from M111 #########
+                    [1240,300, 1],     # Some 'random' coordinates for testing purposes as no real test data is available currently.
+                    [370,450, 0],      # Replace with the initial incomming data.
+                    [850,450, 1],      # Same goes for depth_list
+                    [470,550, 0],
+                    [750,550, 1],
+                    [520,666, 0],
+                    [700,666, 1]]                                  ###### getHeliosDistances(coordinates_list) initial start value #######
 depth_list = [500, 500, 1500, 1500, 2500, 2500, 3500, 3500]     # Some 'random' distances for testing purposes as no real test data is available currently.
 angle = 0                           # readGyro(z) initial start value
 lastAngle = 0                   # Initial "zero" / start orientation
@@ -150,7 +148,7 @@ distance = 0                        # readEncoder() initial start value
 lastDistance = 0             # Initial "zero" / start encoder value
 car = [0, 1500]                     # Car position (constant, the world moves around the car)
 newPoints = one_frame_cone_positions(coordinates_list, depth_list, fov, image_width, image_height) # Initial frame of cones.
-oldPoints = [[300,1500],[-300,1500],[300,750],[-300,750],[300,1],[-300,1]] #,[300,6000],[-300,6000]] # Some initial old points behind the car to ensure correct b-spline.
+oldPoints = [[300,1500, 1],[-300,1500, 0],[300,750, 1],[-300,750, 0],[300,1, 1],[-300,1, 0]] #,[300,6000],[-300,6000]] # Some initial old points behind the car to ensure correct b-spline.
 matchPoints(newPoints, oldPoints)
 
 
@@ -182,33 +180,52 @@ def main():
 ################################################################
 
 
+blueList = []
+yellowList = []
 
-newPoints1 = np.array(oldPoints)
-print(newPoints1)
+for point in oldPoints:
+    if point[2] == 0:
+        blueList.append(point)
+    else:
+        yellowList.append(point)
+        
+yellowList = np.array(yellowList)
+blueList = np.array(blueList)
 
-plt.scatter(newPoints1[:,0], newPoints1[:,1], c='yellow', edgecolors='black', label='Pixel')
+plt.scatter(yellowList[:,0], yellowList[:,1], c='yellow', edgecolors='black', label='Pixel')
+plt.scatter(blueList[:,0], blueList[:,1], c='blue', edgecolors='black', label='Pixel')
 plt.axis('equal')
 plt.show()
 
 
-coordinates_list = [[36,280],       ######## Initial input from M111 #########
-                    [1240,280],     # Some 'random' coordinates for testing purposes as no real test data is available currently.
-                    [370,430],      # Replace with the initial incomming data.
-                    [850,430],      # Same goes for depth_list
-                    [470,530],
-                    [750,530],
-                    [520,646],
-                    [700,646]]                                  ###### getHeliosDistances(coordinates_list) initial start value #######
+coordinates_list = [[36,280, 0],       ######## Initial input from M111 #########
+                    [1240,280, 1],     # Some 'random' coordinates for testing purposes as no real test data is available currently.
+                    [370,430, 0],      # Replace with the initial incomming data.
+                    [850,430, 1],      # Same goes for depth_list
+                    [470,530, 0],
+                    [750,530, 1],
+                    [520,646, 0],
+                    [700,646, 1]]                                  ###### getHeliosDistances(coordinates_list) initial start value #######
 depth_list = [450, 450, 1450, 1450, 2450, 2450, 3450, 3450]     # Some 'random' distances for testing purposes as no real test data is available currently.
 angle = math.radians(5)                           # readGyro(z) initial start value
 distance = 100                        # readEncoder() initial start value
 
 main()
 
-newPoints1 = np.array(oldPoints)
-print(newPoints1)
+blueList = []
+yellowList = []
 
-plt.scatter(newPoints1[:,0], newPoints1[:,1], c='yellow', edgecolors='black', label='Pixel')
+for point in oldPoints:
+    if point[2] == 0:
+        blueList.append(point)
+    else:
+        yellowList.append(point)
+        
+yellowList = np.array(yellowList)
+blueList = np.array(blueList)
+
+plt.scatter(yellowList[:,0], yellowList[:,1], c='yellow', edgecolors='black', label='Pixel')
+plt.scatter(blueList[:,0], blueList[:,1], c='blue', edgecolors='black', label='Pixel')
 plt.axis('equal')
 plt.show()
 
@@ -221,13 +238,22 @@ distance = 200                        # readEncoder() initial start value
 
 main()
 
-newPoints1 = np.array(oldPoints)
-print(newPoints1)
+blueList = []
+yellowList = []
 
-plt.scatter(newPoints1[:,0], newPoints1[:,1], c='yellow', edgecolors='black', label='Pixel')
+for point in oldPoints:
+    if point[2] == 0:
+        blueList.append(point)
+    else:
+        yellowList.append(point)
+        
+yellowList = np.array(yellowList)
+blueList = np.array(blueList)
+
+plt.scatter(yellowList[:,0], yellowList[:,1], c='yellow', edgecolors='black', label='Pixel')
+plt.scatter(blueList[:,0], blueList[:,1], c='blue', edgecolors='black', label='Pixel')
 plt.axis('equal')
 plt.show()
-
 
 
 

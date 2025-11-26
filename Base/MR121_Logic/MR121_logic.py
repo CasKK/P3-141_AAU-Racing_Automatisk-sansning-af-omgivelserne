@@ -36,7 +36,7 @@ inputVectorsBTurn = [[353.0, 670.0, 1],
                     [1977.0, 3890.0, 1]]
 
 ####### Expanded turn #########
-inputVectorsYTurn = [[-368.0, 540.0, 0],
+inputVectorsBTurn = [[-368.0, 540.0, 0],
                     [-365.0, 1100.0, 0],
                     [-403.0, 2250.0, 0],
                     [-1.0, 3680.0, 0],
@@ -46,7 +46,7 @@ inputVectorsYTurn = [[-368.0, 540.0, 0],
                     [2900.0, 5200.0, 0],
                     [3000.0, 5600.0, 0],
                     [2910.0, 6300.0, 0]]
-inputVectorsBTurn = [[353.0, 670.0, 1],
+inputVectorsYTurn = [[353.0, 670.0, 1],
                     [377.0, 1330.0, 1],
                     [351.0, 2150.0, 1],
                     [779.0, 3230.0, 1],
@@ -110,7 +110,7 @@ def BSpline(points):########### Make and fit Basis-spline ###############
     
     s = np.sqrt(dx_u**2 + dy_u**2)              # Formel fra "Calculus: A Complete Course, 10Ce" Omskrevet til 2D fra 3D
     kp = (dx_u * ddy_u - dy_u * ddx_u) / (s**3) # chapter 12.5: Curvature and Torsion for General Parametrizations side 676 (første side af kapitlet).
-    v_max = np.sqrt(1 / (np.abs(kp) + 1e-6))    # <--- Formel fra chat
+    v_max = np.sqrt(1 / (np.abs(kp) + 1e-6))    # <--- Hastigheds-formel fra chat
     v_max = np.clip(v_max, 0, 80)
     #v_target = np.convolve(v_max, np.ones(50)/10, mode='same')
     return v_max, kp, x_u, y_u, dx_u, dy_u #np.array([dx_u, dy_u]), np.array([ddx_u, ddy_u])
@@ -132,6 +132,8 @@ time_start = time.time() # start time for measuring perfomance
 
 ############## Program ##################
 
+# inputVectorsBTurn = blueConesFromM113()
+# inputVectorsYTurn = yellowConesFromM113()
 distanceSortedPointsB = closestNP1(inputVectorsBTurn)
 distanceSortedPointsY = closestNP1(inputVectorsYTurn)
 
@@ -146,6 +148,9 @@ s, kp, x_smooth, y_smooth, dx_u, dy_u = BSpline(centers)
 
 closest_u = carClosestPoint(x_smooth, y_smooth) # Find the index 
 steering = np.arctan(L * kp) # 3-line steering-angle bicycle formula
+steer_now = steering[int(closest_u)]
+
+######## Export 's' (speed) and 'steer_now' (steering angle). ##########
 
 
 ################# Post program stuff #####################
@@ -154,13 +159,13 @@ time_end = time.time() # stop time
 print(f"Runtime: {time_end - time_start:.5f} seconds")
 
 # print(s[temp])
-# print(kp[temp])
+# print(kp)
 print(closest_u)
 
 # plt.plot(np.degrees(steering))
 # plt.show()
 
-steer_now = steering[101]
+
 #print("steering (rad):", steer_first)
 print("steering (deg):", np.degrees(steer_now))
 
@@ -168,29 +173,29 @@ print("steering (deg):", np.degrees(steer_now))
 ################# plot ##############
 
 
-# df = pd.DataFrame({
-#     'x': x_smooth,
-#     'y': y_smooth,
-#     'z': s
-# })
-# fig = px.scatter_3d(
-#         df,
-#         x='x',
-#         y='y',
-#         z='z',
-#         opacity=0.8,
-#         size_max=5
-#     )
-# min_val = min(df['x'].min(), df['y'].min())
-# max_val = max(df['x'].max(), df['y'].max())
-# # Update layout to set equal ranges
-# fig.update_layout(
-#     scene=dict(
-#         xaxis=dict(range=[min_val, max_val]),
-#         yaxis=dict(range=[min_val, max_val])
-#     )
-# )
-# fig.show()
+df = pd.DataFrame({
+    'x': x_smooth,
+    'y': y_smooth,
+    'z': s
+})
+fig = px.scatter_3d(
+        df,
+        x='x',
+        y='y',
+        z='z',
+        opacity=0.8,
+        size_max=5
+    )
+min_val = min(df['x'].min(), df['y'].min())
+max_val = max(df['x'].max(), df['y'].max())
+# Update layout to set equal ranges
+fig.update_layout(
+    scene=dict(
+        xaxis=dict(range=[min_val, max_val]),
+        yaxis=dict(range=[min_val, max_val])
+    )
+)
+fig.show()
 
 plt.figure(figsize=(8,8))
 plt.scatter(distanceSortedPointsY[:, 0], distanceSortedPointsY[:, 1], c='yellow', edgecolor='black', label='distanceListA')
