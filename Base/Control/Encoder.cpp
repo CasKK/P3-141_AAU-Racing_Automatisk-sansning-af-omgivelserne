@@ -1,6 +1,11 @@
 
 #include <Arduino.h>
 #include <Servo.h>
+#include "ICM20600.h"
+#include <Wire.h>
+#include <math.h>
+
+// Encoder and Wheel Parameters
 
 #define ENCODER_PIN 2
 #define PULSES_PER_REV 100       // Counting both edges (50 holes × 2)
@@ -17,6 +22,15 @@ float rpm = 0;
 float speed_mps = 0;
 
 Servo esc;
+
+// Gyro variables
+unsigned long t_prev = 0;
+float angle = 0.0f;
+float gyro_offset = 0.0f;
+
+
+ICM20600 icm20600(true);
+
 
 // -----------------------------------------------------------
 // Interrupt Service Routine
@@ -63,7 +77,25 @@ int P_control(float desired_speed, float current_rpm) {
 // Setup
 // -----------------------------------------------------------
 void setup() {
+  // join I2C bus (I2Cdev library doesn't do this automatically)
+  Wire.begin();
+  Wire.setClock(400000);
+  icm20600.initialize();
+  delay(10);
   Serial.begin(115200);
+    
+   // Kalibrér gyro offset
+  Serial.println("Calibrating gyro...");
+  long sum = 0;
+  for (int i = 0; i < 1000; i++) {
+    sum += icm20600.getGyroscopeZ();
+    delay(2);
+  }
+  gyro_offset = sum / 1000.0f;
+  Serial.print("Gyro offset: "); Serial.println(gyro_offset);
+  t_prev = micros();
+
+
   pinMode(ENCODER_PIN, INPUT);
 
   esc.attach(11, 1000, 2000);
@@ -120,99 +152,20 @@ void loop() {
     Serial.print(">m/s:");
     Serial.println(speed_mps);
   }
+
+  // float totalAngle = 0.0f;
+  // unsigned long t_now = 0;
+  // unsigned long time = micros();
+  // for(int i = 0; i <= 15; i++){
+  //     t_now = micros();       
+  //     float dt = (t_now - t_prev)/ 1e6;
+  //     t_prev = t_now;
+  //     float gyroZ = icm20600.getGyroscopeZ() - gyro_offset; 
+  //     angle += gyroZ * dt; 
+  //     totalAngle += angle;
+  // }
+  // Serial.print(">time:");
+  // Serial.println(micros() - time);
+  // Serial.print(">Angle:");
+  // Serial.println(M_PI/180 * (totalAngle/15), 2);
 }
-
-// int ENCODER_A = 3;
-
-// volatile int encoder_Value = 0;
-// int lastEncoderValue = 0;
-// float encoderDiff = 0;
-// float RPM_1 = 0;
-// float RPM_2 = 0;
-// float RPM_3 = 0;
-// float RPM_4 = 0;
-// float RPM = 0;
-// float meters_per_second = 0;
-// unsigned long lastTime = 0;
-// float wheel_circumference = 0.5776; // in m
-// float encoderTime = 0;
-// float integral = 0;
-
-// Servo esc;
-
-// bool ENCODER_A_STATE;
-
-// void encoderAFunc();
-
-// void setup() {
-//     Serial.begin(115200);
-//     pinMode(ENCODER_A, INPUT);
-//     esc.attach(9);       // Attach ESC to pin 9
-//     delay(500);
-
-//     // Step 1: Full throttle
-//     esc.write(180);      
-//     delay(1500);
-
-//     // Step 2: Zero throttle
-//     esc.write(0);        
-//     delay(1500);    
-//     delay(2000);
-//     attachInterrupt(digitalPinToInterrupt(ENCODER_A), encoderAFunc, CHANGE);
-// }
-
-// float P_control(float desired_speed, float RPM) {
-//   float K_p = 0.2; // Proportional gain
-//   float error = ((desired_speed*60)/wheel_circumference) - RPM;
-//   float control_signal = K_p * error;
-//   Serial.print(">Control Signal:");
-//   Serial.println(control_signal);
-//   return control_signal;
-// }
-
-// void loop() {
-//     Serial.print(">encoderValue:");
-//     Serial.println(encoder_Value);
-//     Serial.print(">Rounds:");
-//     Serial.println(encoder_Value/100);
-//     esc.write(120); // Neutral signal
-
-//     float desired_speed = 1; // Desired speed in m/s
-//     float control_signal = P_control(desired_speed, RPM)+90;
-//     if (control_signal > 180.0){
-//       control_signal = 180.0;
-//     } 
-//     if (control_signal < 90.0){
-//       control_signal = 90.0;
-//     }
-//     esc.write(control_signal);
-
-//     if (millis() - lastTime >= 50) {
-//         encoderDiff = (float)encoder_Value - (float)lastEncoderValue;
-//         // Serial.print("  encoderDiff = ");
-//         // Serial.print(encoderDiff);
-//         // Serial.print("  lastEncodeValue = ");
-//         // Serial.print(lastEncoderValue);
-//         RPM_1 = (encoderDiff / 100) * 20 * 60;
-//         RPM_4 = RPM_3;
-//         RPM_3 = RPM_2;
-//         RPM_2 = RPM_1;
-//         RPM = (RPM_1 + RPM_2 + RPM_3 + RPM_4) / 4.0;
-
-//         meters_per_second = (RPM * wheel_circumference) / 60;
-//         lastEncoderValue = encoder_Value;
-//         lastTime = millis();
-//     }
-
-//     Serial.print(">RPM:");
-//     Serial.println(RPM);
-//     Serial.print(">m/s:");
-//     Serial.println(meters_per_second);
-// }
-
-// void encoderAFunc() {
-//   if (micros() - encoderTime > 500) {
-//     encoder_Value += 1;
-//   }
-//   encoderTime = micros();
-// }
