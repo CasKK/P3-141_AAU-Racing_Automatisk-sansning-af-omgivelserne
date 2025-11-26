@@ -173,29 +173,29 @@ print("steering (deg):", np.degrees(steer_now))
 ################# plot ##############
 
 
-df = pd.DataFrame({
-    'x': x_smooth,
-    'y': y_smooth,
-    'z': s
-})
-fig = px.scatter_3d(
-        df,
-        x='x',
-        y='y',
-        z='z',
-        opacity=0.8,
-        size_max=5
-    )
-min_val = min(df['x'].min(), df['y'].min())
-max_val = max(df['x'].max(), df['y'].max())
-# Update layout to set equal ranges
-fig.update_layout(
-    scene=dict(
-        xaxis=dict(range=[min_val, max_val]),
-        yaxis=dict(range=[min_val, max_val])
-    )
-)
-fig.show()
+# df = pd.DataFrame({
+#     'x': x_smooth,
+#     'y': y_smooth,
+#     'z': s
+# })
+# fig = px.scatter_3d(
+#         df,
+#         x='x',
+#         y='y',
+#         z='z',
+#         opacity=0.8,
+#         size_max=5
+#     )
+# min_val = min(df['x'].min(), df['y'].min())
+# max_val = max(df['x'].max(), df['y'].max())
+# # Update layout to set equal ranges
+# fig.update_layout(
+#     scene=dict(
+#         xaxis=dict(range=[min_val, max_val]),
+#         yaxis=dict(range=[min_val, max_val])
+#     )
+# )
+# fig.show()
 
 plt.figure(figsize=(8,8))
 plt.scatter(distanceSortedPointsY[:, 0], distanceSortedPointsY[:, 1], c='yellow', edgecolor='black', label='distanceListA')

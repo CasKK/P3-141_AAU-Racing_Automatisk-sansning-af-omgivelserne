@@ -51,7 +51,8 @@ def one_frame_cone_positions(coordinates_list, depth_list, fov, image_width, ima
 
     #Iterate through each coordinate
     for i, vector in enumerate(coordinates_list):
-        Processed_list.append(pixel_to_relative_coordinates(vector, depth_list[i], fov, image_width, image_height)) ######## Add cone type into the data here ##
+        if depth_list[i] < 6000:
+            Processed_list.append(pixel_to_relative_coordinates(vector, depth_list[i], fov, image_width, image_height)) ######## Add cone type into the data here ##
     
     print(f"Output list")
     print(Processed_list)
