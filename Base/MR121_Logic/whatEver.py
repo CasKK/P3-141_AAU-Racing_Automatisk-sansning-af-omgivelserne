@@ -1,80 +1,166 @@
 import numpy as np
-import random
-import matplotlib.pyplot as plt
+import plotly.express as px
+import pandas as pd
+import time
+import copy
 
-def generate_points(n_points=20, 
-                    x_max=125, x_min_dist=75,
-                    y_max=1250, y_min_step=250):
-    pointsA = []
-    pointsB = []
-    
-    # Start y somewhere within range
-    y = random.uniform(0, y_max - y_min_step * (n_points - 1))
-    
-    for i in range(n_points):
-        # Ensure we don't exceed max Y
-        if y > y_max:
-            break
-        
-        # Random X for list A
-        xA = random.uniform(-x_max, x_max)
-        
-        # For list B, ensure it's at least x_min_dist away
-        # Randomly decide if it’s on the opposite side or same side
-        if random.random() < 0.5:
-            # opposite side of x-axis
-            if xA >= 0:
-                xB = xA - random.uniform(x_min_dist, 2 * x_max - xA)
-            else:
-                xB = xA + random.uniform(x_min_dist, 2 * x_max + xA)
+
+def closestNP(vectorListA, vectorListB):########### Sort two point lists based on distance from (0,0) ############
+    # time_start = time.time()
+    vectorListA = copy.deepcopy(vectorListA)
+    vectorListB = copy.deepcopy(vectorListB)
+    for i, vector in enumerate(vectorListA):
+        result = np.sqrt(vector[0]**2 + vector[1]**2)
+        if i < len(vectorListA)-1:
+            nextVector = vectorListA[i+1]
+            nextDist = np.sqrt((vector[0] - nextVector[0])**2 + (vector[1] - nextVector[1])**2)
         else:
-            # same side, just offset by at least x_min_dist
-            offset = random.choice([-1, 1]) * random.uniform(x_min_dist, x_max)
-            xB = xA + offset
+            nextDist = 1000
+        vectorListA[i].extend([result, nextDist])
         
-        # Clamp xB to range
-        xB = np.clip(xB, -x_max, x_max)
-        
-        # Append both
-        pointsA.append([xA, y])
-        pointsB.append([xB, y])
-        
-        # Increase y by random step
-        y += random.uniform(y_min_step, y_min_step * 1.5)
-    
-    return np.array(pointsA), np.array(pointsB)
+    for i, vector in enumerate(vectorListB):
+        result = np.sqrt(vector[0]**2 + vector[1]**2)
+        if i < len(vectorListB)-1:
+            nextVector = vectorListB[i+1]
+            nextDist = np.sqrt((vector[0] - nextVector[0])**2 + (vector[1] - nextVector[1])**2)
+        else:
+            nextDist = 1000
+        vectorListB[i].extend([result, nextDist])
+    vectorListA = np.array(sorted(vectorListA, key=lambda x: x[-2]))
+    vectorListB = np.array(sorted(vectorListB, key=lambda x: x[-2]))
+
+    # time_end = time.time()
+    # print(f"Runtime: {time_end - time_start:.4f} seconds")
+    # print(vectorListA)
+    # print(vectorListB)
+    return vectorListA, vectorListB
+
+def closestPandasQuick(localVectorListA, localVectorListB):
+    time_start = time.time()
+    localVectorListA = copy.deepcopy(localVectorListA)
+    localVectorListB = copy.deepcopy(localVectorListB)
+
+    for i, vector in enumerate(localVectorListA):
+        result = np.sqrt(vector[0]**2 + vector[1]**2)
+        if i < len(localVectorListA)-1:
+            nextVector = localVectorListA[i+1]
+            nextDist = np.sqrt((vector[0] - nextVector[0])**2 + (vector[1] - nextVector[1])**2)
+            localVectorListA[i] += [result]
+            localVectorListA[i] += [nextDist]
+    for i, vector in enumerate(localVectorListB):
+        result = np.sqrt(vector[0]**2 + vector[1]**2)
+        if i < len(localVectorListB)-1:
+            nextVector = localVectorListB[i+1]
+            nextDist = np.sqrt((vector[0] - nextVector[0])**2 + (vector[1] - nextVector[1])**2)
+            localVectorListB[i].extend([result, nextDist])
+    df1 = pd.DataFrame(localVectorListA, columns=['x', 'y', 'color', 'distanceCar', 'distanceNext'])
+    df2 = pd.DataFrame(localVectorListB, columns=['x', 'y', 'color', 'distanceCar', 'distanceNext'])
+
+    time_end = time.time()
+    print(f"Runtime: {time_end - time_start:.4f} seconds")
+    # print(df1)
+    # print(df2)
+    return df1, df2
+
+def closestPandasSimple(localVectorListA, localVectorListB):
+    time_start = time.time()
+
+    df1 = pd.DataFrame(localVectorListA, columns=['x', 'y', 'color'])
+    df2 = pd.DataFrame(localVectorListB, columns=['x', 'y', 'color'])
+    df1['distanceCar'] = np.sqrt(df1['x']**2 + df1['y']**2)
+    df2['distanceCar'] = np.sqrt(df2['x']**2 + df2['y']**2)
+    df1['dist_to_next'] = np.sqrt((df1['x'].shift(-1) - df1['x'])**2 + (df1['y'].shift(-1) - df1['y'])**2)
+    df2['dist_to_next'] = np.sqrt((df2['x'].shift(-1) - df2['x'])**2 + (df2['y'].shift(-1) - df2['y'])**2)
+
+    time_end = time.time()
+    print(f"Runtime: {time_end - time_start:.4f} seconds")
+    print(df1)
+    print(df2)
+    return df1, df2
+
+def BSpline1232(): #### Some potential optimizations for BSpline #######
+    # x = points[:,0]
+    # y = points[:,1]
+
+    # d = np.sqrt(np.diff(x)**2 + np.diff(y)**2)
+    # t = np.concatenate([[0], np.cumsum(d)])
+
+    print("something")
+
+    # # cubic
+    # k = 3
+    # # smoothing: fewer knots → more smooth
+    # num_knots = 12
+    # knots = np.linspace(0, 1, num_knots)[1:-1]
+    # spl_x = make_lsq_spline(t, points[:,0], knots, k)
+    # spl_y = make_lsq_spline(t, points[:,1], knots, k)
+    # t_fine = np.linspace(0, 1, 800)
+    # x_smooth = spl_x(t_fine)
+    # y_smooth = spl_y(t_fine)
 
 
-# ---- Generate ----
-distanceListA, distanceListB = generate_points()
+############## Program ##################
 
-# ---- Plot ----
-plt.figure(figsize=(8, 6))
-plt.scatter(distanceListA[:,0], distanceListA[:,1], color='blue', label='List A')
-plt.scatter(distanceListB[:,0], distanceListB[:,1], color='yellow', edgecolor='black', label='List B')
+# distanceListY, distanceListB = closestNP(inputVectorsYTurn, inputVectorsBTurn)
+# distanceLista, distanceListd = closestPandasQuick(inputVectorsB, inputVectorsY)
+# distanceLista, distanceListd = closestPandasSimple(inputVectorsB, inputVectorsY)
 
-# Connect corresponding points
-for a, b in zip(distanceListA, distanceListB):
-    plt.plot([a[0], b[0]], [a[1], b[1]], 'k--', alpha=0.4)
 
-plt.title("Procedurally Generated Points")
-plt.xlabel("X")
-plt.ylabel("Y")
-plt.legend()
-plt.grid(True)
-plt.axis('equal')
-plt.show()
 
-inputVectorsB = [[-368.0, 540.0, 0],
-                [-381.0, 2580.0, 0],
-                [-363.0, 2250.0, 0],
-                [-344.0, 3540.0, 0],
-                [-365.0, 1100.0, 0],
-                [-353.0, 4690.0, 0]]
 
-inputVectorsY = [[353.0, 670.0, 1],
-                [353.0, 3510.0, 1],
-                [351.0, 2150.0, 1],
-                [379.0, 2630.0, 1],
-                [377.0, 1330.0, 1],
-                [377.0, 4490.0, 1]]
+
+
+
+
+############################ Polyfit ###################################
+
+# from scipy.interpolate import lagrange
+
+# degree = 2
+# coeffs = np.polyfit(centers[:, 0], centers[:, 1], degree)
+# p = np.poly1d(coeffs)
+# # p = lagrange(centers[:, 0], centers[:, 1])
+
+# # Make a smooth range of x-values for plotting the curve
+# x_plot = np.linspace(min(centers[:, 0]), max(centers[:, 0]), 200)
+# y_plot = p(x_plot)
+
+# # Plot
+# plt.scatter(centers[:, 0], centers[:, 1], label='Data Points')   # original points
+# plt.plot(x_plot, y_plot, label='Polynomial Fit')
+
+# plt.legend()
+# plt.xlabel("x")
+# plt.ylabel("y")
+# plt.title("Polynomial Fit")
+# plt.grid(True)
+# plt.show()
+
+
+######################## 'pass-by-value' vs 'pass-by-reference'? mby... test #############################
+
+# inputA =    [[-350.13, 50.90, "blue"],
+#             [-350.34, 100.90, "blue"],
+#             [-350.56, 200.90, "blue"],
+#             [-350.13, 250.90, "blue"],
+#             [-350.34, 300.90, "blue"],
+#             [-350.56, 400.90, "blue"]]
+
+# print(inputA)
+
+# def someFunction(localInputA):
+#     for i, vector in enumerate(localInputA):
+#         result = vector[0] + 350
+#         localInputA[i] += [result]
+#     return localInputA
+
+# someVar = someFunction(inputA)
+
+# print(inputA)
+# print(someVar)
+
+# # result:
+# # [[-350.13, 50.9, 'blue'], [-350.34, 100.9, 'blue'], [-350.56, 200.9, 'blue'], [-350.13, 250.9, 'blue'], [-350.34, 300.9, 'blue'], [-350.56, 400.9, 'blue']]
+# # [[-350.13, 50.9, 'blue', -0.12999999999999545], [-350.34, 100.9, 'blue', -0.339999999999975], [-350.56, 200.9, 'blue', -0.5600000000000023], [-350.13, 250.9, 'blue', -0.12999999999999545], [-350.34, 300.9, 'blue', -0.339999999999975], [-350.56, 400.9, 'blue', -0.5600000000000023]]
+# # [[-350.13, 50.9, 'blue', -0.12999999999999545], [-350.34, 100.9, 'blue', -0.339999999999975], [-350.56, 200.9, 'blue', -0.5600000000000023], [-350.13, 250.9, 'blue', -0.12999999999999545], [-350.34, 300.9, 'blue', -0.339999999999975], [-350.56, 400.9, 'blue', -0.5600000000000023]]
+
