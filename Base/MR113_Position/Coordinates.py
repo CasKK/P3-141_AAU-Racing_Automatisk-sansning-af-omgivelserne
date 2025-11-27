@@ -43,8 +43,8 @@ def one_frame_cone_positions(coordinates_list, depth_list, fov, image_width, ima
     # image_width: width of the image in pixels 
     # image height: height of the image in pixels
 
-    print(f"input list:")
-    print(coordinates_list)
+    # print(f"input list:")
+    # print(coordinates_list)
 
     #Define ouput list
     Processed_list = []
@@ -54,8 +54,8 @@ def one_frame_cone_positions(coordinates_list, depth_list, fov, image_width, ima
         if depth_list[i] < 6000:
             Processed_list.append(pixel_to_relative_coordinates(vector, depth_list[i], fov, image_width, image_height)) ######## Add cone type into the data here ##
     
-    print(f"Output list")
-    print(Processed_list)
+    # print(f"Output list")
+    # print(Processed_list)
 
     return Processed_list
 
@@ -76,7 +76,7 @@ def matchPoints(points, oldPoints, maxDist = 200*200):######################## C
         if j not in updated:
             oldPoints[int(j)][0:2] = points[int(i)][0:2]
             updated.add(j)
-    print(updated) ############## print ##########
+    # print(updated) ############## print ##########
     for i in points: # Add new points
         if i not in oldPoints:
             oldPoints.append(i)
@@ -161,6 +161,8 @@ def main():
     global lastAngle
     global lastDistance
 
+    # while dataFromM111AndHelios == none: ###### something like this
+    #     wait()
     # coordinates_list = dataFromM111()                         ###### Input from M111 #########                   
     # depth_list = getHeliosDistances(coordinates_list)         ###### Input from Helios #######
 
@@ -178,7 +180,7 @@ def main():
     # Export 'oldPoints' to use later in pipeline (M121)
 
 
-################################################################
+################### Post program plot and stuff ####################
 
 blueList = []
 yellowList = []
@@ -207,96 +209,44 @@ bsc = ax.scatter(bxs, bys, c='blue', edgecolors='black')
 
 ax.set_aspect('equal')
 
-for frame in range(20):
-    # Update newPoints1 here…
-    coordinates_list = []
-    angle += math.radians(1)
-    distance += 100
-    main()
-    blueList = []
-    yellowList = []
-    for point in oldPoints:
-        if point[2] == 0:
-            blueList.append(point)
-        else:
-            yellowList.append(point)
 
-    bxs = [p[0] for p in blueList]
-    bys = [p[1] for p in blueList]
-    yxs = [p[0] for p in yellowList]
-    yys = [p[1] for p in yellowList]
+if __name__ == "__main__":
+    
+    for frame in range(20):
+        # Update newPoints1 here…
+        coordinates_list = []
+        angle += math.radians(1)
+        distance += 100
+        main()
+        blueList = []
+        yellowList = []
+        for point in oldPoints:
+            if point[2] == 0:
+                blueList.append(point)
+            else:
+                yellowList.append(point)
 
-    ysc.set_offsets(list(zip(yxs, yys)))
-    bsc.set_offsets(list(zip(bxs, bys)))
-    plt.pause(0.5)
+        bxs = [p[0] for p in blueList]
+        bys = [p[1] for p in blueList]
+        yxs = [p[0] for p in yellowList]
+        yys = [p[1] for p in yellowList]
 
-
-
-# yellowList = np.array(yellowList)
-# blueList = np.array(blueList)
-
-# plt.scatter(yellowList[:,0], yellowList[:,1], c='yellow', edgecolors='black', label='Pixel')
-# plt.scatter(blueList[:,0], blueList[:,1], c='blue', edgecolors='black', label='Pixel')
-# plt.axis('equal')
-# plt.show()
+        ysc.set_offsets(list(zip(yxs, yys)))
+        bsc.set_offsets(list(zip(bxs, bys)))
+        plt.pause(0.5)
 
 
-# coordinates_list = [[36,280, 0],       ######## Initial input from M111 #########
-#                     [1240,280, 1],     # Some 'random' coordinates for testing purposes as no real test data is available currently.
-#                     [370,430, 0],      # Replace with the initial incomming data.
-#                     [850,430, 1],      # Same goes for depth_list
+
+
+# coordinates_list = [[36,280, 0],
+#                     [1240,280, 1],
+#                     [370,430, 0],
+#                     [850,430, 1],
 #                     [470,530, 0],
 #                     [750,530, 1],
 #                     [520,646, 0],
-#                     [700,646, 1]]                                  ###### getHeliosDistances(coordinates_list) initial start value #######
-# depth_list = [450, 450, 1450, 1450, 2450, 2450, 3450, 3450]     # Some 'random' distances for testing purposes as no real test data is available currently.
-# angle = math.radians(5)                           # readGyro(z) initial start value
-# distance = 100                        # readEncoder() initial start value
-
-# main()
-
-# blueList = []
-# yellowList = []
-
-# for point in oldPoints:
-#     if point[2] == 0:
-#         blueList.append(point)
-#     else:
-#         yellowList.append(point)
-        
-# yellowList = np.array(yellowList)
-# blueList = np.array(blueList)
-
-# plt.scatter(yellowList[:,0], yellowList[:,1], c='yellow', edgecolors='black', label='Pixel')
-# plt.scatter(blueList[:,0], blueList[:,1], c='blue', edgecolors='black', label='Pixel')
-# plt.axis('equal')
-# plt.show()
-
-
-
-# coordinates_list = []                                  ###### getHeliosDistances(coordinates_list) initial start value #######
-# depth_list = []     # Some 'random' distances for testing purposes as no real test data is available currently.
-# angle = math.radians(10)                           # readGyro(z) initial start value
-# distance = 200                        # readEncoder() initial start value
-
-# main()
-
-# blueList = []
-# yellowList = []
-
-# for point in oldPoints:
-#     if point[2] == 0:
-#         blueList.append(point)
-#     else:
-#         yellowList.append(point)
-        
-# yellowList = np.array(yellowList)
-# blueList = np.array(blueList)
-
-# plt.scatter(yellowList[:,0], yellowList[:,1], c='yellow', edgecolors='black', label='Pixel')
-# plt.scatter(blueList[:,0], blueList[:,1], c='blue', edgecolors='black', label='Pixel')
-# plt.axis('equal')
-# plt.show()
+#                     [700,646, 1]]
+# depth_list = [450, 450, 1450, 1450, 2450, 2450, 3450, 3450]
 
 
 
@@ -304,6 +254,7 @@ for frame in range(20):
 
 
 
+############# Victor stuff: ############
 
 
 

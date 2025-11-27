@@ -21,19 +21,19 @@ from scipy.interpolate import splprep, splev, make_lsq_spline
 #                 [377.0, 1330.0, 1],
 #                 [377.0, 4490.0, 1]]
 
-##### Original turn #######
-inputVectorsYTurn = [[-368.0, 540.0, 0],
-                    [-365.0, 1100.0, 0],
-                    [-403.0, 2250.0, 0],
-                    [-1.0, 3680.0, 0],
-                    [1044.0, 4540.0, 0],
-                    [1847.0, 4690.0, 0]]
-inputVectorsBTurn = [[353.0, 670.0, 1],
-                    [377.0, 1330.0, 1],
-                    [351.0, 2150.0, 1],
-                    [779.0, 3230.0, 1],
-                    [1353.0, 3710.0, 1],
-                    [1977.0, 3890.0, 1]]
+# ##### Original turn #######
+# inputVectorsYTurn = [[-368.0, 540.0, 0],
+#                     [-365.0, 1100.0, 0],
+#                     [-403.0, 2250.0, 0],
+#                     [-1.0, 3680.0, 0],
+#                     [1044.0, 4540.0, 0],
+#                     [1847.0, 4690.0, 0]]
+# inputVectorsBTurn = [[353.0, 670.0, 1],
+#                     [377.0, 1330.0, 1],
+#                     [351.0, 2150.0, 1],
+#                     [779.0, 3230.0, 1],
+#                     [1353.0, 3710.0, 1],
+#                     [1977.0, 3890.0, 1]]
 
 ####### Expanded turn #########
 inputVectorsBTurn = [[-368.0, 540.0, 0],
@@ -68,15 +68,18 @@ def closestNP1(vectorList):########### Sort point list based on distance from (0
             nextVector = vectorList[i+1]
             nextDist = np.sqrt((vector[0] - nextVector[0])**2 + (vector[1] - nextVector[1])**2)
         else:
-            nextDist = 1000
+            nextDist = 10000
         vectorList[i].extend([result, nextDist])
     vectorList = np.array(sorted(vectorList, key=lambda x: x[-2]))
     return vectorList
 
 
 def calculateCenters(distanceListA, distanceListB):############# Canculate center points from two point lists ############
-    centers = [car]#, [0, 1600], [0, 1700]]#, [0,50], [0,100], [0,150], [0,200]] #, [0,250], [0,350], [0,300], [0,25], [0,75], [0,125], [0,175], [0,225], [0,275], [0,325], [0,375]
+    centers = [car.copy()]#, [0, 1600], [0, 1700]]#, [0,50], [0,100], [0,150], [0,200]] #, [0,250], [0,350], [0,300], [0,25], [0,75], [0,125], [0,175], [0,225], [0,275], [0,325], [0,375]
     #centers.append([0,0], [0,100])
+    # distanceListA = copy.deepcopy(distanceListA)
+    # distanceListB = copy.deepcopy(distanceListB)
+    # print(car)
     for i, (vecA, vecB) in enumerate(zip(distanceListA, distanceListB)):
         centers.append([((vecA[0] - vecB[0]) / 2) + vecB[0], ((vecA[1] - vecB[1]) / 2) + vecB[1]])
         if i < len(distanceListA) - 1:
@@ -132,28 +135,39 @@ time_start = time.time() # start time for measuring perfomance
 
 ############## Program ##################
 
-# inputVectorsBTurn = blueConesFromM113()
-# inputVectorsYTurn = yellowConesFromM113()
-distanceSortedPointsB = closestNP1(inputVectorsBTurn)
-distanceSortedPointsY = closestNP1(inputVectorsYTurn)
+def main():
+    # inputVectorsBTurn = blueConesFromM113()
+    # inputVectorsYTurn = yellowConesFromM113()
+    global distanceSortedPointsB, distanceSortedPointsY
+    distanceSortedPointsB = closestNP1(inputVectorsBTurn)
+    distanceSortedPointsY = closestNP1(inputVectorsYTurn)
 
-# for point in distanceSortedPointsY: # To offset the whole track in x direction for testing purposes
-#     point[0] += 300
-# for point in distanceSortedPointsY:
-#     point[0] += 300
+    # for point in distanceSortedPointsY: # To offset the whole track in x direction for testing purposes
+    #     point[0] += 300
+    # for point in distanceSortedPointsY:
+    #     point[0] += 300
 
-centers = calculateCenters(distanceSortedPointsB, distanceSortedPointsY)
+    global centers
+    centers = calculateCenters(distanceSortedPointsB, distanceSortedPointsY)
 
-s, kp, x_smooth, y_smooth, dx_u, dy_u = BSpline(centers)
-
-closest_u = carClosestPoint(x_smooth, y_smooth) # Find the index 
-steering = np.arctan(L * kp) # 3-line steering-angle bicycle formula
-steer_now = steering[int(closest_u)]
+    global s, kp, x_smooth, y_smooth, dx_u, dy_u
+    s, kp, x_smooth, y_smooth, dx_u, dy_u = BSpline(centers)
+    global closest_u
+    closest_u = carClosestPoint(x_smooth, y_smooth) # Find the index 
+    global steering, steer_now
+    steering = np.arctan(L * kp) # 3-line steering-angle bicycle formula
+    steer_now = steering[int(closest_u)]
 
 ######## Export 's' (speed) and 'steer_now' (steering angle). ##########
 
 
 ################# Post program stuff #####################
+
+
+if __name__ == "__main__":
+    for i in range(20):
+        main()
+        #car[1] += 40
 
 time_end = time.time() # stop time
 print(f"Runtime: {time_end - time_start:.5f} seconds")
@@ -206,7 +220,7 @@ plt.plot(x_smooth, y_smooth, label="Smoothed B-spline fit", linewidth=2)
 #plt.quiver(x_smooth[temp], y_smooth[temp], direction[0, temp] / 10, direction[1, temp] / 10, angles='xy', scale_units='xy', scale=1, color='green', label='Vector')
 #plt.quiver(x_smooth[temp], y_smooth[temp], direction1[0, temp] / 10, direction1[1, temp] / 10, angles='xy', scale_units='xy', scale=1, color='green', label='Vector')
 
-idx = np.linspace(0, len(x_smooth)-1, 80).astype(int)
+idx = np.linspace(0, len(x_smooth)-1, 40).astype(int)
 arrow_scale = 200
 for i in idx:
     tx, ty = dx_u[i], dy_u[i]
