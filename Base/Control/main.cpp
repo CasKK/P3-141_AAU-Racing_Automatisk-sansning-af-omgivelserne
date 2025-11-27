@@ -206,7 +206,7 @@ void Encoder(){
   }
 }
 
-void Servo(){
+void ServoMotor(){
   ReadSerial();
   if (newData){
     Serial.print("Wheel angle temp: ");
@@ -227,7 +227,7 @@ void Servo(){
 
 void loop() {
   time = micros();
-  Servo();
+  ServoMotor();
   Encoder();
   Gyroscope();
 }
