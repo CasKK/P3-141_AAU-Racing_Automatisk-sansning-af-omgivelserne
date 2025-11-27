@@ -9,7 +9,7 @@ import math
 
 # Following Code Will, use an input image coordinate and depth to generate xy vector to a cone for a Driverless Vehicle
 
-def pixel_to_relative_coordinates(coordinates, depth, fov, image_width, image_height):
+def pixel_to_relative_coordinates(coordinates, depth, fov, image_width):
     #Convert pixel coordinates angle and distance to cone vector
     # parameters:
     # coordinates: (x, y, type) pixel coordinates for the cone
