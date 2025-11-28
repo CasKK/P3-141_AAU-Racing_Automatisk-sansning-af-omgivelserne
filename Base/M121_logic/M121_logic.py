@@ -166,12 +166,8 @@ def main():
 def run(input_queue):
     while True:
         Points = input_queue.get()
-        x, y, t = Points
 
         main()
-        # Fake steering calculation
-        steering = math.atan2(y, x)
-        print("[C] Steering:", steering)
 
 
 ################# Post program stuff #####################
