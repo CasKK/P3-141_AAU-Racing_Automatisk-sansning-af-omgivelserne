@@ -165,9 +165,8 @@ def main():
 
 def run(input_queue):
     while True:
-        Points = input_queue.get()
-
-        main()
+        points = input_queue.get()
+        print(points)
 
 
 ################# Post program stuff #####################
