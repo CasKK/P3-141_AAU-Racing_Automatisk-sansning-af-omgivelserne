@@ -9,7 +9,7 @@ import math
 
 # Following Code Will, use an input image coordinate and depth to generate xy vector to a cone for a Driverless Vehicle
 
-def pixel_to_relative_coordinates(coordinates, depth, fov, image_width):
+def pixel_to_relative_coordinates(coordinates, depth, fov, image_width, image_height):
     #Convert pixel coordinates angle and distance to cone vector
     # parameters:
     # coordinates: (x, y, type) pixel coordinates for the cone
@@ -178,6 +178,7 @@ def main():
 
     matchPoints(newPoints, oldPoints)
     # Export 'oldPoints' to use later in pipeline (M121)
+    print(oldPoints)
 
 
 ################### Post program plot and stuff ####################
@@ -194,8 +195,8 @@ if __name__ == "__main__":
         else:
             yellowList.append(point)
 
-    print(blueList)
-    print(yellowList)
+    # print(blueList)
+    # print(yellowList)
 
     plt.ion()
     fig, ax = plt.subplots()
