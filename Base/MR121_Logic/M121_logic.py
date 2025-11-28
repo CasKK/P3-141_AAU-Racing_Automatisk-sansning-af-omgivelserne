@@ -1,12 +1,11 @@
 
 import numpy as np
-import pandas as pd
 import time
 import copy
 import matplotlib.pyplot as plt
 from matplotlib.patches import FancyArrowPatch
 import plotly.express as px
-from scipy.interpolate import splprep, splev, make_lsq_spline
+from scipy.interpolate import splprep, splev
 
 
 # inputVectorsB = [[-368.0, 540.0, 0],
