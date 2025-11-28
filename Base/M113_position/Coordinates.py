@@ -124,8 +124,8 @@ def movePoint(oldPoint, distance):
 
 def roundPoints(points):
     for point in points:
-        point[0] = round(point[0], 1)
-        point[1] = round(point[1], 1)
+        point[0] = int(point[0])# round(point[0], 1)
+        point[1] = int(point[1])# round(point[1], 1)
 
 ################ Setup ##############
 """Some things have to run before 'rotatePointsAroundPoint(oldPoints, car, currentAngle)' and 
@@ -152,7 +152,7 @@ distance = 0                        # readEncoder() initial start value
 lastDistance = 0             # Initial "zero" / start encoder value
 car = [0, 1500]                     # Car position (constant, the world moves around the car)
 newPoints = one_frame_cone_positions(coordinates_list, depth_list, fov, image_width, image_height) # Initial frame of cones.
-oldPoints = [[300,1, 1],[-300,1, 0],[300,750, 1],[-300,750, 0],[300,1500, 1],[-300,1500, 0]] #,[300,6000],[-300,6000]] # Some initial old points behind the car to ensure correct b-spline.
+oldPoints = [[300,1, 1],[-300,5, 0],[300,755, 1],[-300,750, 0],[300,1505, 1],[-300,1500, 0]] #,[300,6000],[-300,6000]] # Some initial old points behind the car to ensure correct b-spline.
 matchPoints(newPoints, oldPoints)
 
 
