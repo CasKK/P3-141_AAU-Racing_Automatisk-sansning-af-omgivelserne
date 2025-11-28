@@ -4,6 +4,7 @@ import pandas as pd
 import time
 import copy
 import matplotlib.pyplot as plt
+from matplotlib.patches import FancyArrowPatch
 import plotly.express as px
 from scipy.interpolate import splprep, splev, make_lsq_spline
 
@@ -57,8 +58,10 @@ inputVectorsYTurn = [[353.0, 670.0, 1],
                     [3800.0, 5700.0, 1],
                     [3810.0, 6300.0, 1]]
 
+car1 = [0,1400]
 car = [0,1500] # Car position will probably be constant in this module. Used to ajust spline to get correct 'current' steering angle.
-                 # Because the first angle of the spline is almost never correct, the spline is also made on some past cones.
+car2 = [0,1600] # Because the first angle of the spline is almost never correct, the spline is also made on some past cones.
+
 
 def closestNP1(vectorList):########### Sort point list based on distance from (0,0) ############
     vectorList = copy.deepcopy(vectorList)
@@ -75,8 +78,7 @@ def closestNP1(vectorList):########### Sort point list based on distance from (0
 
 
 def calculateCenters(distanceListA, distanceListB):############# Canculate center points from two point lists ############
-    centers = [car.copy()]#, [0, 1600], [0, 1700]]#, [0,50], [0,100], [0,150], [0,200]] #, [0,250], [0,350], [0,300], [0,25], [0,75], [0,125], [0,175], [0,225], [0,275], [0,325], [0,375]
-    #centers.append([0,0], [0,100])
+    centers = [car.copy()] #, car1.copy(), car2.copy()]#, [0, 1600], [0, 1700]]#, [0,50], [0,100], [0,150], [0,200]] #, [0,250], [0,350], [0,300], [0,25], [0,75], [0,125], [0,175], [0,225], [0,275], [0,325], [0,375]
     # distanceListA = copy.deepcopy(distanceListA)
     # distanceListB = copy.deepcopy(distanceListB)
     # print(car)
@@ -165,9 +167,77 @@ def main():
 
 
 if __name__ == "__main__":
-    for i in range(20):
+
+    main()
+    plt.ion()
+    fig, ax = plt.subplots()
+    fig.set_size_inches(8, 8)
+    plt.xlim(-3000, 3000)
+    plt.ylim(-500, 6000)
+    bxs = [p[0] for p in inputVectorsBTurn]
+    bys = [p[1] for p in inputVectorsBTurn]
+    yxs = [p[0] for p in inputVectorsYTurn]
+    yys = [p[1] for p in inputVectorsYTurn]
+    cxs = [p[0] for p in centers]
+    cys = [p[1] for p in centers]
+
+    
+    ysc = ax.scatter(yxs, yys, c='yellow', edgecolors='black')
+    bsc = ax.scatter(bxs, bys, c='blue', edgecolors='black')
+    csc = ax.scatter(bxs, bys, c='red', edgecolors='black')
+    line, = ax.plot(x_smooth, y_smooth, label="Smoothed B-spline fit", linewidth=2)
+
+    tx, ty = dx_u[int(closest_u)], dy_u[int(closest_u)]
+    t_norm = np.hypot(tx, ty)
+    tx /= t_norm
+    ty /= t_norm
+    delta = steering[int(closest_u)]
+    wx =  np.cos(delta)*tx - np.sin(delta)*ty
+    wy =  np.sin(delta)*tx + np.cos(delta)*ty
+    arrow_scale = 200
+    start = (x_smooth[int(closest_u)], y_smooth[int(closest_u)])
+    end = (start[0] + wx * arrow_scale, start[1] + wy * arrow_scale)
+    arrow = FancyArrowPatch(start, end, arrowstyle='->', mutation_scale=15, color='green')
+    ax.add_patch(arrow)
+    
+    ax.set_aspect('equal')
+
+    for i in range(50):
         main()
-        #car[1] += 40
+        print(i)
+        print(int(closest_u))
+        car[1] += 40
+        car[0] += 10
+        # car1[1] += 40
+        # car1[0] += 10
+        # car2[1] += 40
+        # car2[0] += 10
+        bxs = [p[0] for p in inputVectorsBTurn]
+        bys = [p[1] for p in inputVectorsBTurn]
+        yxs = [p[0] for p in inputVectorsYTurn]
+        yys = [p[1] for p in inputVectorsYTurn]
+        cxs = [p[0] for p in centers]
+        cys = [p[1] for p in centers]
+
+        tx, ty = dx_u[int(closest_u)], dy_u[int(closest_u)]
+        t_norm = np.hypot(tx, ty)
+        tx /= t_norm
+        ty /= t_norm
+        delta = steering[int(closest_u)]
+        wx =  np.cos(delta)*tx - np.sin(delta)*ty
+        wy =  np.sin(delta)*tx + np.cos(delta)*ty
+        arrow_scale = 400
+
+        start = (x_smooth[int(closest_u)], y_smooth[int(closest_u)])
+        end = (start[0] + wx * arrow_scale, start[1] + wy * arrow_scale)
+
+        arrow.set_positions(start, end)
+
+        ysc.set_offsets(list(zip(yxs, yys)))
+        bsc.set_offsets(list(zip(bxs, bys)))
+        csc.set_offsets(list(zip(cxs, cys)))
+        line.set_data(x_smooth, y_smooth)
+        plt.pause(0.5)
 
 time_end = time.time() # stop time
 print(f"Runtime: {time_end - time_start:.5f} seconds")
