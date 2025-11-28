@@ -220,42 +220,41 @@ def run(input_queue):
 
         
 
-        for i in range(50):
-            main()
-            print(i)
-            print(int(closest_u))
-            # car[1] += 40
-            # car[0] += 10
-            # car1[1] += 40
-            # car1[0] += 10
-            # car2[1] += 40
-            # car2[0] += 10
-            bx = [p[0] for p in inputVectorsBTurn]
-            by = [p[1] for p in inputVectorsBTurn]
-            yx = [p[0] for p in inputVectorsYTurn]
-            yy = [p[1] for p in inputVectorsYTurn]
-            cx = [p[0] for p in centers]
-            cy = [p[1] for p in centers]
+        #for i in range(50):
+        main()
+        print(int(closest_u))
+        # car[1] += 40
+        # car[0] += 10
+        # car1[1] += 40
+        # car1[0] += 10
+        # car2[1] += 40
+        # car2[0] += 10
+        bx = [p[0] for p in inputVectorsBTurn]
+        by = [p[1] for p in inputVectorsBTurn]
+        yx = [p[0] for p in inputVectorsYTurn]
+        yy = [p[1] for p in inputVectorsYTurn]
+        cx = [p[0] for p in centers]
+        cy = [p[1] for p in centers]
 
-            tx, ty = dx_u[int(closest_u)], dy_u[int(closest_u)]
-            t_norm = np.hypot(tx, ty)
-            tx /= t_norm
-            ty /= t_norm
-            delta = steering[int(closest_u)]
-            wx =  np.cos(delta)*tx - np.sin(delta)*ty
-            wy =  np.sin(delta)*tx + np.cos(delta)*ty
-            arrow_scale = 400
+        tx, ty = dx_u[int(closest_u)], dy_u[int(closest_u)]
+        t_norm = np.hypot(tx, ty)
+        tx /= t_norm
+        ty /= t_norm
+        delta = steering[int(closest_u)]
+        wx =  np.cos(delta)*tx - np.sin(delta)*ty
+        wy =  np.sin(delta)*tx + np.cos(delta)*ty
+        arrow_scale = 400
 
-            start = (x_smooth[int(closest_u)], y_smooth[int(closest_u)])
-            end = (start[0] + wx * arrow_scale, start[1] + wy * arrow_scale)
+        start = (x_smooth[int(closest_u)], y_smooth[int(closest_u)])
+        end = (start[0] + wx * arrow_scale, start[1] + wy * arrow_scale)
 
-            arrow.set_positions(start, end)
+        arrow.set_positions(start, end)
 
-            yscatter.set_offsets(list(zip(yx, yy)))
-            bscatter.set_offsets(list(zip(bx, by)))
-            cscatter.set_offsets(list(zip(cx, cy)))
-            line.set_data(x_smooth, y_smooth)
-            plt.pause(0.5)
+        yscatter.set_offsets(list(zip(yx, yy)))
+        bscatter.set_offsets(list(zip(bx, by)))
+        cscatter.set_offsets(list(zip(cx, cy)))
+        line.set_data(x_smooth, y_smooth)
+        plt.pause(0.5)
 
 time_end = time.time() # stop time
 print(f"Runtime: {time_end - time_start:.5f} seconds")

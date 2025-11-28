@@ -122,7 +122,10 @@ def movePoints(oldPoints, distance):
 def movePoint(oldPoint, distance):
     oldPoint[1] -= distance
 
-
+def roundPoints(points):
+    for point in points:
+        point[0] = round(point[0], 1)
+        point[1] = round(point[1], 1)
 
 ################ Setup ##############
 """Some things have to run before 'rotatePointsAroundPoint(oldPoints, car, currentAngle)' and 
@@ -178,6 +181,7 @@ def main():
 
     matchPoints(newPoints, oldPoints)
     # Export 'oldPoints' to use later in pipeline (M121)
+    roundPoints(oldPoints)
     print(oldPoints)
 
 ######### run ###########
@@ -221,11 +225,11 @@ def run(output_queue):
 
     #while True: ##########################
         
-    for frame in range(20):
+    for frame in range(200):
         global coordinates_list, angle, distance
         coordinates_list = []
-        angle += math.radians(1)
-        distance += 100
+        angle += math.radians(0.1)
+        distance += 10
         main()
         # blueList = []
         # yellowList = []
