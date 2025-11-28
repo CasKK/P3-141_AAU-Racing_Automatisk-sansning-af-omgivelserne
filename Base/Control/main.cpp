@@ -32,6 +32,7 @@ bool newData = false;
 float wheelAngle;
 float wheelAngleTemp;
 float desiredSpeed = 0.8f;  // m/s
+unsigned long lastTime = 0;
 ICM20600 icm20600(true);
 
 
@@ -94,7 +95,6 @@ void ReadSerial() {
 // Setup
 // -----------------------------------------------------------
 void setup() {
-  // join I2C bus (I2Cdev library doesn't do this automatically)
   Wire.begin();
   Wire.setClock(400000);
   icm20600.initialize();
@@ -109,7 +109,8 @@ void setup() {
     delay(2);
   }
   gyro_offset = sum / 1000.0f;
-  Serial.print("Gyro offset: "); Serial.println(gyro_offset);
+  Serial.print("Gyro offset: ");
+  Serial.println(gyro_offset);
   t_prev = micros();
 
   pinMode(ENCODER_PIN, INPUT);
@@ -118,23 +119,15 @@ void setup() {
   steering.attach(7);
   steering.write(val);
   delay(500);
-
-  // // ESC calibration
-  // esc.writeMicroseconds(2000);
-  // delay(1500);
-  // esc.writeMicroseconds(1000);
-  // delay(1500);
-  // delay(2000);
   Serial.println("Arduino Is ready :)");
   delay(3000);
   attachInterrupt(digitalPinToInterrupt(ENCODER_PIN), encoderISR, CHANGE);
 }
 
-float MotorToServo(int x) {
-  float xfloat = x/10.0;
-  float x2 = xfloat * xfloat;
-  float x3 = x2 * xfloat;
-  float servoAngle =  0.00123378679436315 * x3 - 0.34492174790361900 * x2 + 34.23770218227510000 * xfloat - 1095.74990424557000000;
+float MotorToServo(float x) {
+  float x2 = x * x;
+  float x3 = x2 * x;
+  float servoAngle =  0.00123378679436315 * x3 - 0.34492174790361900 * x2 + 34.23770218227510000 * x - 1095.74990424557000000;
   int servoAngleInt = (int)round(servoAngle);
   return constrain(servoAngleInt, 0, 180);
 }
@@ -143,7 +136,7 @@ float MotorToServo(int x) {
 // Main Loop
 // -----------------------------------------------------------
 
-void Gyroscope(){
+float Gyroscope(){
   
   float totalAngle = 0.0f;
   unsigned long t_now = 0;
@@ -158,13 +151,11 @@ void Gyroscope(){
   if (debug == true){
     Serial.print(">time:");
     Serial.println(micros() - time);
-
     Serial.print(">Angle:");
     Serial.println(M_PI/180 * (totalAngle/15), 2);
   }
-  Serial.print(">time:");
-  Serial.println(micros() - time);
-  
+
+  return M_PI/180 * (totalAngle/15);
 }
 
 void Encoder(){
@@ -229,5 +220,9 @@ void loop() {
   time = micros();
   ServoMotor();
   Encoder();
-  Gyroscope();
+  float angleValue = Gyroscope();
+  if (time - lastTime >= 33000){
+    Serial.println(angleValue);
+    lastTime = time;
+  }
 }
