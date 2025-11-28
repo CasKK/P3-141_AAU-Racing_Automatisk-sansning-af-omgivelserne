@@ -182,35 +182,37 @@ def main():
 
 ################### Post program plot and stuff ####################
 
-blueList = []
-yellowList = []
-
-for point in oldPoints:
-    if point[2] == 0:
-        blueList.append(point)
-    else:
-        yellowList.append(point)
-
-print(blueList)
-print(yellowList)
-
-plt.ion()
-fig, ax = plt.subplots()
-fig.set_size_inches(6, 6)
-plt.xlim(-3000, 3000)
-plt.ylim(-500, 6000)
-bxs = [p[0] for p in blueList]
-bys = [p[1] for p in blueList]
-yxs = [p[0] for p in yellowList]
-yys = [p[1] for p in yellowList]
-
-ysc = ax.scatter(yxs, yys, c='yellow', edgecolors='black')
-bsc = ax.scatter(bxs, bys, c='blue', edgecolors='black')
-
-ax.set_aspect('equal')
-
 
 if __name__ == "__main__":
+
+    blueList = []
+    yellowList = []
+
+    for point in oldPoints:
+        if point[2] == 0:
+            blueList.append(point)
+        else:
+            yellowList.append(point)
+
+    print(blueList)
+    print(yellowList)
+
+    plt.ion()
+    fig, ax = plt.subplots()
+    fig.set_size_inches(6, 6)
+    plt.xlim(-3000, 3000)
+    plt.ylim(-500, 6000)
+    bxs = [p[0] for p in blueList]
+    bys = [p[1] for p in blueList]
+    yxs = [p[0] for p in yellowList]
+    yys = [p[1] for p in yellowList]
+
+    ysc = ax.scatter(yxs, yys, c='yellow', edgecolors='black')
+    bsc = ax.scatter(bxs, bys, c='blue', edgecolors='black')
+
+    ax.set_aspect('equal')
+
+
     
     for frame in range(20):
         # Update newPoints1 here…
