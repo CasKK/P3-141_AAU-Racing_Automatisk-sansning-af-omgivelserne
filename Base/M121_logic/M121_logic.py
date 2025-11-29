@@ -86,13 +86,13 @@ def calculateCenters(distanceListA, distanceListB):############# Canculate cente
         if i < len(distanceListA) - 1:
             next_vecA = distanceListA[i + 1]
             centers.append([((next_vecA[0] - vecB[0]) / 2) + vecB[0], ((next_vecA[1] - vecB[1]) / 2) + vecB[1]])
-        if i < len(distanceListB) - 1:
-            next_vecB = distanceListB[i + 1]
-            centers.append([((next_vecB[0] - vecA[0]) / 2) + vecA[0], ((next_vecB[1] - vecA[1]) / 2) + vecA[1]])
+        # if i < len(distanceListB) - 1:
+        #     next_vecB = distanceListB[i + 1]
+        #     centers.append([((next_vecB[0] - vecA[0]) / 2) + vecA[0], ((next_vecB[1] - vecA[1]) / 2) + vecA[1]])
     for i, center in enumerate(centers):
         centers[i].append(np.sqrt(center[0]**2 + center[1]**2))
     centers = np.array(sorted(centers, key=lambda x: x[-2]))
-    # print(centers)
+    print(centers)
     return centers
 
 
@@ -180,17 +180,17 @@ if __name__ == "__main__":
     fig.set_size_inches(8, 8)
     plt.xlim(-3000, 3000)
     plt.ylim(-500, 6000)
-    bxs = [p[0] for p in inputVectorsBTurn]
-    bys = [p[1] for p in inputVectorsBTurn]
-    yxs = [p[0] for p in inputVectorsYTurn]
-    yys = [p[1] for p in inputVectorsYTurn]
-    cxs = [p[0] for p in centers]
-    cys = [p[1] for p in centers]
+    bx = [p[0] for p in inputVectorsBTurn]
+    by = [p[1] for p in inputVectorsBTurn]
+    yx = [p[0] for p in inputVectorsYTurn]
+    yy = [p[1] for p in inputVectorsYTurn]
+    cx = [p[0] for p in centers]
+    cy = [p[1] for p in centers]
 
     
-    ysc = ax.scatter(yxs, yys, c='yellow', edgecolors='black')
-    bsc = ax.scatter(bxs, bys, c='blue', edgecolors='black')
-    csc = ax.scatter(bxs, bys, c='red', edgecolors='black')
+    yscatter = ax.scatter(yx, yy, c='yellow', edgecolors='black')
+    bscatter = ax.scatter(bx, by, c='blue', edgecolors='black')
+    cscatter = ax.scatter(bx, by, c='red', edgecolors='black')
     line, = ax.plot(x_smooth, y_smooth, label="Smoothed B-spline fit", linewidth=2)
 
     tx, ty = dx_u[int(closest_u)], dy_u[int(closest_u)]
@@ -207,23 +207,43 @@ if __name__ == "__main__":
     ax.add_patch(arrow)
     
     ax.set_aspect('equal')
+    
+    while True:
+        points = input_queue.get()
+        print(points)
+        
+        inputVectorsBTurn = []
+        inputVectorsYTurn = []
 
-    for i in range(50):
+        for point in points:
+            if point[2] == 0:
+                inputVectorsBTurn.append(point)
+            else:
+                inputVectorsYTurn.append(point)
+
+
+################# Post program stuff #####################
+
+
+#if __name__ == "__main__":
+
+        
+
+        #for i in range(50):
         main()
-        print(i)
         print(int(closest_u))
-        car[1] += 40
-        car[0] += 10
+        # car[1] += 40
+        # car[0] += 10
         # car1[1] += 40
         # car1[0] += 10
         # car2[1] += 40
         # car2[0] += 10
-        bxs = [p[0] for p in inputVectorsBTurn]
-        bys = [p[1] for p in inputVectorsBTurn]
-        yxs = [p[0] for p in inputVectorsYTurn]
-        yys = [p[1] for p in inputVectorsYTurn]
-        cxs = [p[0] for p in centers]
-        cys = [p[1] for p in centers]
+        bx = [p[0] for p in inputVectorsBTurn]
+        by = [p[1] for p in inputVectorsBTurn]
+        yx = [p[0] for p in inputVectorsYTurn]
+        yy = [p[1] for p in inputVectorsYTurn]
+        cx = [p[0] for p in centers]
+        cy = [p[1] for p in centers]
 
         tx, ty = dx_u[int(closest_u)], dy_u[int(closest_u)]
         t_norm = np.hypot(tx, ty)
@@ -239,9 +259,9 @@ if __name__ == "__main__":
 
         arrow.set_positions(start, end)
 
-        ysc.set_offsets(list(zip(yxs, yys)))
-        bsc.set_offsets(list(zip(bxs, bys)))
-        csc.set_offsets(list(zip(cxs, cys)))
+        yscatter.set_offsets(list(zip(yx, yy)))
+        bscatter.set_offsets(list(zip(bx, by)))
+        cscatter.set_offsets(list(zip(cx, cy)))
         line.set_data(x_smooth, y_smooth)
         plt.pause(0.5)
 
@@ -250,14 +270,14 @@ print(f"Runtime: {time_end - time_start:.5f} seconds")
 
 # print(s[temp])
 # print(kp)
-print(closest_u)
+# print(closest_u)
 
 # plt.plot(np.degrees(steering))
 # plt.show()
 
 
-#print("steering (rad):", steer_first)
-print("steering (deg):", np.degrees(steer_now))
+# print("steering (rad):", steer_first)
+#print("steering (deg):", np.degrees(steer_now))
 
 
 ################# plot ##############
@@ -287,38 +307,38 @@ print("steering (deg):", np.degrees(steer_now))
 # )
 # fig.show()
 
-plt.figure(figsize=(8,8))
-plt.scatter(distanceSortedPointsY[:, 0], distanceSortedPointsY[:, 1], c='yellow', edgecolor='black', label='distanceListA')
-plt.scatter(distanceSortedPointsB[:, 0], distanceSortedPointsB[:, 1], c='blue', edgecolor='black', label='distanceListB')
-plt.scatter(centers[:,0], centers[:,1], color='red', label="Original waypoints")
-#plt.scatter(x_smooth, y_smooth, color='red', label="smooth waypoints")
-plt.plot(x_smooth, y_smooth, label="Smoothed B-spline fit", linewidth=2)
-#plt.quiver(x_smooth[temp], y_smooth[temp], direction[0, temp] / 10, direction[1, temp] / 10, angles='xy', scale_units='xy', scale=1, color='green', label='Vector')
-#plt.quiver(x_smooth[temp], y_smooth[temp], direction1[0, temp] / 10, direction1[1, temp] / 10, angles='xy', scale_units='xy', scale=1, color='green', label='Vector')
+# plt.figure(figsize=(8,8))
+# plt.scatter(distanceSortedPointsY[:, 0], distanceSortedPointsY[:, 1], c='yellow', edgecolor='black', label='distanceListA')
+# plt.scatter(distanceSortedPointsB[:, 0], distanceSortedPointsB[:, 1], c='blue', edgecolor='black', label='distanceListB')
+# plt.scatter(centers[:,0], centers[:,1], color='red', label="Original waypoints")
+# #plt.scatter(x_smooth, y_smooth, color='red', label="smooth waypoints")
+# plt.plot(x_smooth, y_smooth, label="Smoothed B-spline fit", linewidth=2)
+# #plt.quiver(x_smooth[temp], y_smooth[temp], direction[0, temp] / 10, direction[1, temp] / 10, angles='xy', scale_units='xy', scale=1, color='green', label='Vector')
+# #plt.quiver(x_smooth[temp], y_smooth[temp], direction1[0, temp] / 10, direction1[1, temp] / 10, angles='xy', scale_units='xy', scale=1, color='green', label='Vector')
 
-idx = np.linspace(0, len(x_smooth)-1, 40).astype(int)
-arrow_scale = 200
-for i in idx:
-    tx, ty = dx_u[i], dy_u[i]
-    t_norm = np.hypot(tx, ty)
-    tx /= t_norm
-    ty /= t_norm
+# idx = np.linspace(0, len(x_smooth)-1, 40).astype(int)
+# arrow_scale = 200
+# for i in idx:
+#     tx, ty = dx_u[i], dy_u[i]
+#     t_norm = np.hypot(tx, ty)
+#     tx /= t_norm
+#     ty /= t_norm
 
-    delta = steering[i]  # steering angle in radians
+#     delta = steering[i]  # steering angle in radians
 
-    wx =  np.cos(delta)*tx - np.sin(delta)*ty
-    wy =  np.sin(delta)*tx + np.cos(delta)*ty
+#     wx =  np.cos(delta)*tx - np.sin(delta)*ty
+#     wy =  np.sin(delta)*tx + np.cos(delta)*ty
 
-    plt.arrow(x_smooth[i],
-              y_smooth[i],
-              wx * arrow_scale,
-              wy * arrow_scale,
-              head_width=40,
-              color="green")
+#     plt.arrow(x_smooth[i],
+#               y_smooth[i],
+#               wx * arrow_scale,
+#               wy * arrow_scale,
+#               head_width=40,
+#               color="green")
 
-plt.axis('equal')
-#plt.legend()
-#plt.title("Smoothed racing line fit (B-spline with smoothing)")
-plt.show()
+# plt.axis('equal')
+# #plt.legend()
+# #plt.title("Smoothed racing line fit (B-spline with smoothing)")
+# plt.show()
 
 

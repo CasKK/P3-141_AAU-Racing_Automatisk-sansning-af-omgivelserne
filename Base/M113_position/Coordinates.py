@@ -122,7 +122,10 @@ def movePoints(oldPoints, distance):
 def movePoint(oldPoint, distance):
     oldPoint[1] -= distance
 
-
+def roundPoints(points):
+    for point in points:
+        point[0] = int(point[0])# round(point[0], 1)
+        point[1] = int(point[1])# round(point[1], 1)
 
 ################ Setup ##############
 """Some things have to run before 'rotatePointsAroundPoint(oldPoints, car, currentAngle)' and 
@@ -149,7 +152,7 @@ distance = 0                        # readEncoder() initial start value
 lastDistance = 0             # Initial "zero" / start encoder value
 car = [0, 1500]                     # Car position (constant, the world moves around the car)
 newPoints = one_frame_cone_positions(coordinates_list, depth_list, fov, image_width, image_height) # Initial frame of cones.
-oldPoints = [[300,1, 1],[-300,1, 0],[300,750, 1],[-300,750, 0],[300,1500, 1],[-300,1500, 0]] #,[300,6000],[-300,6000]] # Some initial old points behind the car to ensure correct b-spline.
+oldPoints = [[300,1, 1],[-300,5, 0],[300,755, 1],[-300,750, 0],[300,1505, 1],[-300,1500, 0]] #,[300,6000],[-300,6000]] # Some initial old points behind the car to ensure correct b-spline.
 matchPoints(newPoints, oldPoints)
 
 
@@ -178,64 +181,72 @@ def main():
 
     matchPoints(newPoints, oldPoints)
     # Export 'oldPoints' to use later in pipeline (M121)
+    roundPoints(oldPoints)
     print(oldPoints)
+
+######### run ###########
+
+def run(output_queue):
+    
+        
 
 
 ################### Post program plot and stuff ####################
 
 
-if __name__ == "__main__":
+#if __name__ == "__main__": ######################
 
-    blueList = []
-    yellowList = []
+    # blueList = []
+    # yellowList = []
 
-    for point in oldPoints:
-        if point[2] == 0:
-            blueList.append(point)
-        else:
-            yellowList.append(point)
+    # for point in oldPoints:
+    #     if point[2] == 0:
+    #         blueList.append(point)
+    #     else:
+    #         yellowList.append(point)
 
-    # print(blueList)
-    # print(yellowList)
+    # # print(blueList)
+    # # print(yellowList)
 
-    plt.ion()
-    fig, ax = plt.subplots()
-    fig.set_size_inches(6, 6)
-    plt.xlim(-3000, 3000)
-    plt.ylim(-500, 6000)
-    bxs = [p[0] for p in blueList]
-    bys = [p[1] for p in blueList]
-    yxs = [p[0] for p in yellowList]
-    yys = [p[1] for p in yellowList]
+    # plt.ion()
+    # fig, ax = plt.subplots()
+    # fig.set_size_inches(6, 6)
+    # plt.xlim(-3000, 3000)
+    # plt.ylim(-500, 6000)
+    # bxs = [p[0] for p in blueList]
+    # bys = [p[1] for p in blueList]
+    # yxs = [p[0] for p in yellowList]
+    # yys = [p[1] for p in yellowList]
 
-    ysc = ax.scatter(yxs, yys, c='yellow', edgecolors='black')
-    bsc = ax.scatter(bxs, bys, c='blue', edgecolors='black')
+    # ysc = ax.scatter(yxs, yys, c='yellow', edgecolors='black')
+    # bsc = ax.scatter(bxs, bys, c='blue', edgecolors='black')
 
-    ax.set_aspect('equal')
+    # ax.set_aspect('equal')
 
-
-    
-    for frame in range(20):
-        # Update newPoints1 here…
+    #while True: ##########################
+        
+    for frame in range(200):
+        global coordinates_list, angle, distance
         coordinates_list = []
-        angle += math.radians(1)
-        distance += 100
+        angle += math.radians(0.1)
+        distance += 10
         main()
-        blueList = []
-        yellowList = []
-        for point in oldPoints:
-            if point[2] == 0:
-                blueList.append(point)
-            else:
-                yellowList.append(point)
+        # blueList = []
+        # yellowList = []
+        # for point in oldPoints:
+        #     if point[2] == 0:
+        #         blueList.append(point)
+        #     else:
+        #         yellowList.append(point)
 
-        bxs = [p[0] for p in blueList]
-        bys = [p[1] for p in blueList]
-        yxs = [p[0] for p in yellowList]
-        yys = [p[1] for p in yellowList]
+        # bxs = [p[0] for p in blueList]
+        # bys = [p[1] for p in blueList]
+        # yxs = [p[0] for p in yellowList]
+        # yys = [p[1] for p in yellowList]
 
-        ysc.set_offsets(list(zip(yxs, yys)))
-        bsc.set_offsets(list(zip(bxs, bys)))
+        # ysc.set_offsets(list(zip(yxs, yys)))
+        # bsc.set_offsets(list(zip(bxs, bys)))
+        output_queue.put(oldPoints)
         plt.pause(0.5)
 
 
@@ -262,67 +273,67 @@ if __name__ == "__main__":
 
 
 # Track cones across frames and compute global position
-def translate_cone_vectors_to_global_coordinates(frames, match_threshold=3000, max_missing_frames=5):
-    """
-    frames: list of (cone_positions) for each frame, where cone_positions is Nx2 array of [x, y]
-    match_threshold: max distance to consider cones as same
-    max_missing_frames: remove cones if unseen for these many frames
-    """
-    global_position = np.array([0.0, 0.0])
-    cone_tracker = {}  # {id: {pos: np.array([x,y]), last_seen: frame_index}}
-    next_id = 0
-    trajectory = []
+# def translate_cone_vectors_to_global_coordinates(frames, match_threshold=3000, max_missing_frames=5):
+#     """
+#     frames: list of (cone_positions) for each frame, where cone_positions is Nx2 array of [x, y]
+#     match_threshold: max distance to consider cones as same
+#     max_missing_frames: remove cones if unseen for these many frames
+#     """
+#     global_position = np.array([0.0, 0.0])
+#     cone_tracker = {}  # {id: {pos: np.array([x,y]), last_seen: frame_index}}
+#     next_id = 0
+#     trajectory = []
 
-    for frame_idx, cones in enumerate(frames):
-        # Match cones to tracker
-        matched_ids = set()
-        for cone in cones:
-            best_match = None
-            best_dist = float('inf')
-            for cid, data in cone_tracker.items():
-                dist = np.linalg.norm(cone - data['pos'])
-                if dist < match_threshold and dist < best_dist:
-                    best_match = cid
-                    best_dist = dist
-            if best_match is not None:
-                # Update existing cone
-                cone_tracker[best_match]['pos'] = cone
-                cone_tracker[best_match]['last_seen'] = frame_idx
-                matched_ids.add(best_match)
-            else:
-                # Add new cone
-                cone_tracker[next_id] = {'pos': cone, 'last_seen': frame_idx}
-                matched_ids.add(next_id)
-                next_id += 1
+#     for frame_idx, cones in enumerate(frames):
+#         # Match cones to tracker
+#         matched_ids = set()
+#         for cone in cones:
+#             best_match = None
+#             best_dist = float('inf')
+#             for cid, data in cone_tracker.items():
+#                 dist = np.linalg.norm(cone - data['pos'])
+#                 if dist < match_threshold and dist < best_dist:
+#                     best_match = cid
+#                     best_dist = dist
+#             if best_match is not None:
+#                 # Update existing cone
+#                 cone_tracker[best_match]['pos'] = cone
+#                 cone_tracker[best_match]['last_seen'] = frame_idx
+#                 matched_ids.add(best_match)
+#             else:
+#                 # Add new cone
+#                 cone_tracker[next_id] = {'pos': cone, 'last_seen': frame_idx}
+#                 matched_ids.add(next_id)
+#                 next_id += 1
 
-        # Remove cones not seen for too long
-        to_remove = [cid for cid, data in cone_tracker.items() if frame_idx - data['last_seen'] > max_missing_frames]
-        for cid in to_remove:
-            del cone_tracker[cid]
+#         # Remove cones not seen for too long
+#         to_remove = [cid for cid, data in cone_tracker.items() if frame_idx - data['last_seen'] > max_missing_frames]
+#         for cid in to_remove:
+#             del cone_tracker[cid]
 
-        # Compute translation using matched cones from previous frame
-        if frame_idx > 0:
-            prev_frame = frames[frame_idx - 1]
-            shifts = []
-            for cone in cones:
-                if len(prev_frame) == 0:
-                    continue
-                dists = np.linalg.norm(prev_frame - cone, axis=1)
-                min_idx = np.argmin(dists)
-                if dists[min_idx] < match_threshold:
-                    shift = prev_frame[min_idx] - cone
-                    shifts.append(shift)
-            if shifts:
-                avg_shift = np.mean(shifts, axis=0)
-                global_position += -avg_shift  # negative because cones move opposite to car
+#         # Compute translation using matched cones from previous frame
+#         if frame_idx > 0:
+#             prev_frame = frames[frame_idx - 1]
+#             shifts = []
+#             for cone in cones:
+#                 if len(prev_frame) == 0:
+#                     continue
+#                 dists = np.linalg.norm(prev_frame - cone, axis=1)
+#                 min_idx = np.argmin(dists)
+#                 if dists[min_idx] < match_threshold:
+#                     shift = prev_frame[min_idx] - cone
+#                     shifts.append(shift)
+#             if shifts:
+#                 avg_shift = np.mean(shifts, axis=0)
+#                 global_position += -avg_shift  # negative because cones move opposite to car
 
-        trajectory.append(global_position.copy())
-        print(f"Frame {frame_idx}: Global Position = {global_position}")
+#         trajectory.append(global_position.copy())
+#         print(f"Frame {frame_idx}: Global Position = {global_position}")
 
-    return global_position, np.array(trajectory)
+#     return global_position, np.array(trajectory)
 
 # Load dataset
-df = pd.read_csv(fr"MR113_Position\nascar_track_cones_dataset_synth3.csv")
+# df = pd.read_csv(fr"MR113_Position\nascar_track_cones_dataset_synth3.csv")
 # plt.scatter(df["pixel_x"], df["pixel_y"], c='yellow', edgecolors='black', label='Pixel')
 # plt.axis('equal')
 # plt.show()
