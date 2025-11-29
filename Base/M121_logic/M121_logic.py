@@ -164,7 +164,16 @@ def main():
 ############### some run stuff ###############
 
 def run(input_queue):
-    global inputVectorsBTurn, inputVectorsYTurn
+    while True:
+        points = input_queue.get()
+        print(points)
+
+
+################# Post program stuff #####################
+
+
+if __name__ == "__main__":
+
     main()
     plt.ion()
     fig, ax = plt.subplots()
