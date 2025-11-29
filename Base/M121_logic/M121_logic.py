@@ -92,7 +92,7 @@ def calculateCenters(distanceListA, distanceListB):############# Canculate cente
     for i, center in enumerate(centers):
         centers[i].append(np.sqrt(center[0]**2 + center[1]**2))
     centers = np.array(sorted(centers, key=lambda x: x[-2]))
-    print(centers)
+    # print(centers)
     return centers
 
 
