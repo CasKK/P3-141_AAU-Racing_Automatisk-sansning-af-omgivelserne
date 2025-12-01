@@ -5,7 +5,7 @@ import time
 import subprocess
 import math
 import glob
-from py_helios_smooth_result import CreateDevice, HeliosRunning, HeliosEnd
+from helios_create_image import CreateDevice, HeliosRunning, HeliosEnd
 import threading
 kernel = np.ones([5,5], np.uint8)
 latest_distance_frame = None

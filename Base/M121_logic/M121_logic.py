@@ -199,7 +199,7 @@ def run(input_queue):
     
     while True:
         points = input_queue.get()
-        print(points)
+        print(f"M121Points: {points} {time.time()}")
         
         inputVectorsBTurn = []
         inputVectorsYTurn = []
@@ -220,7 +220,7 @@ def run(input_queue):
 
         #for i in range(50):
         main()
-        print(int(closest_u))
+        print(f"Closest_U: {int(closest_u)}")
         # car[1] += 40
         # car[0] += 10
         # car1[1] += 40
@@ -252,7 +252,7 @@ def run(input_queue):
         bscatter.set_offsets(list(zip(bx, by)))
         cscatter.set_offsets(list(zip(cx, cy)))
         line.set_data(x_smooth, y_smooth)
-        plt.pause(0.5)
+        plt.pause(0.001)
 
 time_end = time.time() # stop time
 print(f"Runtime: {time_end - time_start:.5f} seconds")
