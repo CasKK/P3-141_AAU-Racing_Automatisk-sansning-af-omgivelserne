@@ -137,25 +137,21 @@ float MotorToServo(float x) {
 // -----------------------------------------------------------
 
 float Gyroscope(){
-  
-  float totalAngle = 0.0f;
   unsigned long t_now = 0;
-  for(int i = 0; i <= 15; i++){
-      t_now = micros();       
-      float dt = (t_now - t_prev)/ 1e6;
-      t_prev = t_now;
-      float gyroZ = icm20600.getGyroscopeZ() - gyro_offset; 
-      angle += gyroZ * dt; 
-      totalAngle += angle;
-  }
+  t_now = micros();       
+  float dt = (t_now - t_prev)/ 1e6;
+  Serial.println((t_now - t_prev),10);
+  t_prev = t_now;
+  float gyroZ = icm20600.getGyroscopeZ() - gyro_offset; 
+  angle += gyroZ * dt; 
   if (debug == true){
     Serial.print(">time:");
     Serial.println(micros() - time);
     Serial.print(">Angle:");
-    Serial.println(M_PI/180 * (totalAngle/15), 2);
+    Serial.println(angle);
   }
 
-  return M_PI/180 * (totalAngle/15);
+  return M_PI/180 * angle;
 }
 
 void Encoder(){
@@ -222,7 +218,9 @@ void loop() {
   Encoder();
   float angleValue = Gyroscope();
   if (time - lastTime >= 33000){
-    Serial.println(angleValue);
+    Serial.print(angleValue);
+    Serial.print(", ");
+    Serial.println(encoderCount);
     lastTime = time;
   }
 }
