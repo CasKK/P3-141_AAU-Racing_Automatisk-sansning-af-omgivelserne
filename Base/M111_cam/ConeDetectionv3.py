@@ -5,9 +5,10 @@ import time
 import subprocess
 import math
 import glob
-from py_helios_smooth_result import CreateDevice, HeliosRunning, HeliosEnd, set_nodes
+from .helios_create_image import CreateDevice, HeliosRunning, HeliosEnd
 import threading
 kernel = np.ones([5,5], np.uint8)
+debug = False
 
 
 
@@ -243,7 +244,8 @@ def CompareWithHelios(contours, frame, depth):
     for contour in contours:
         c, x, y, w, h, d = contour
         mask = np.zeros_like(frame[:, :, 0])
-        cv2.drawContours(mask, [c], -1, 255, -1)
+        if debug == True:
+            cv2.drawContours(mask, [c], -1, 255, -1)
         hist = cv2.calcHist([depth],[0],mask,[6000],[0,6001])
 
         peaks = []
@@ -364,15 +366,22 @@ def DrawBoundingBox(box, frame, color):
     cv2.rectangle(frame, p1, p2, frameColor, 2, 1)
     cv2.putText(frame, label, (p1[0], p1[1]-5), cv2.FONT_HERSHEY_COMPLEX, 0.7, frameColor, 2, cv2.LINE_AA)
 
-def DistToCenter (cones, depth):
+def DistToCenter (conesBlue, conesYellow, depth):
     xyzToCones = []
     
-    for cone in cones:
+    for cone in conesBlue:
         x, y = cone
         x, y = int(x), int(y) 
         z = depth[y,x]
         z = int(z)
-        xyzToCones.append((x, y, z))
+        xyzToCones.append((x, y, z, 0))
+
+    for cone in conesYellow:
+        x, y = cone
+        x, y = int(x), int(y) 
+        z = depth[y,x]
+        z = int(z)
+        xyzToCones.append((x, y, z, 1))
     
     return xyzToCones
 
@@ -382,7 +391,8 @@ def DistToCenter (cones, depth):
 latestDistanceFrame = None
 
 # This is where everything comes together 
-def main():
+def run(output_queue):
+#def main():
     stopEvent = threading.Event()
     device ,scale_z, pixelFormat_initial, operating_mode_initial,  exposure_time_initial, conversion_gain_initial, image_accumulation_initial, spatial_filter_initial, confidence_threshold_initial = CreateDevice()
 
@@ -399,8 +409,6 @@ def main():
         except Exception as e:
             print(f"Fejl i HeliosThread: {e}")
 
-    global latestDistanceFrame
-    latestDistanceFrame = None 
     
     t = threading.Thread(target=HeliosThread, args=(device, scale_z), daemon=True)
     t.start()
@@ -433,8 +441,8 @@ def main():
 
         #set_nodes(device.nodemap)
         
-        bbBlue = CompareWithHelios(bboxesBlue, frame, depth)
-        bbYellow = CompareWithHelios(bboxesYellow, frame, depth)
+        # bbBlue = CompareWithHelios(bboxesBlue, frame, depth)
+        # bbYellow = CompareWithHelios(bboxesYellow, frame, depth)
 
         # Checks if it has found any Blue and Yellow BBoxes, before trying to draw them
         
@@ -442,7 +450,8 @@ def main():
 
         # cv2.drawContours drawing all contours (-1) in red, (BGR: 0,0,255) with thickness 3
         frameEdges = frame.copy()
-        cv2.drawContours(frameEdges, edgeContours, -1, (0, 0, 255), 3)
+        if debug == True:
+            cv2.drawContours(frameEdges, edgeContours, -1, (0, 0, 255), 3)
 
         #verifying edge-detection
         bboxesBlueVerified = VerifyConesWithEdges(bboxesBlue, combine, 0.1)
@@ -450,9 +459,11 @@ def main():
 
         bboxBlue, bboxYellow, _, _, centerPointsBlue, centerPointsYellow = MergeBbox(bboxesBlueVerified , bboxesYellowVerified)
 
-        positionBlue = DistToCenter(centerPointsBlue, depth)
+        positions = DistToCenter(centerPointsBlue, centerPointsYellow, depth)
+        print(f"ConePos: {positions}")
 
-        print(positionBlue)
+
+        output_queue.put(positions)
 
         #draw the varified boxes and edges
         for boxb in bboxBlue:
@@ -473,7 +484,7 @@ def main():
         # Show the combined mask and frame with bboxes
         #cv2.imshow("mask", mask)
         # prints FPS
-        print(f"FPS: {fps}")
+        # print(f"FPS: {fps}")
         if cv2.waitKey(1) == ord('q'):
             break
     
@@ -490,6 +501,6 @@ def main():
     except Exception as e:
         print("Fejl under HeliosEnd", e)
 
-if __name__ == "__main__":
-    main()
+# if __name__ == "__main__":
+#     main()
     
