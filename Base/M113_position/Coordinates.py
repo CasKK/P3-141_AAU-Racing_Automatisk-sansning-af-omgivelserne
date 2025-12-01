@@ -186,7 +186,7 @@ def main():
 
 ######### run ###########
 
-def run(output_queue):
+def run(input_queue, output_queue):
     
         
 
@@ -227,10 +227,14 @@ def run(output_queue):
         
     for frame in range(200):
         global coordinates_list, angle, distance
+        points = input_queue.get()
         coordinates_list = []
         angle += math.radians(0.1)
         distance += 10
         main()
+
+
+
         # blueList = []
         # yellowList = []
         # for point in oldPoints:
@@ -246,6 +250,9 @@ def run(output_queue):
 
         # ysc.set_offsets(list(zip(yxs, yys)))
         # bsc.set_offsets(list(zip(bxs, bys)))
+
+
+
         output_queue.put(oldPoints)
         plt.pause(0.5)
 
