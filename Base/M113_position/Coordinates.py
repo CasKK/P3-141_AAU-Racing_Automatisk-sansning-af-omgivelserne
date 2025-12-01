@@ -137,15 +137,15 @@ image_width = 1280
 image_height = 720
 
 # Other initial parameters
-coordinates_list = [[36,300, 0],       ######## Initial input from M111 #########
-                    [1240,300, 1],     # Some 'random' coordinates for testing purposes as no real test data is available currently.
-                    [370,450, 0],      # Replace with the initial incomming data.
-                    [850,450, 1],      # Same goes for depth_list
-                    [470,550, 0],
-                    [750,550, 1],
-                    [520,666, 0],
-                    [700,666, 1]]                                  ###### getHeliosDistances(coordinates_list) initial start value #######
-depth_list = [500, 500, 1500, 1500, 2500, 2500, 3500, 3500]     # Some 'random' distances for testing purposes as no real test data is available currently.
+coordinates_list = []#[36,300, 0],       ######## Initial input from M111 #########
+                    #[1240,300, 1]]#,     # Some 'random' coordinates for testing purposes as no real test data is available currently.
+                    #[370,450, 0],      # Replace with the initial incomming data.
+                    #[850,450, 1],      # Same goes for depth_list
+                    #[470,550, 0],
+                    #[750,550, 1],
+                    #[520,666, 0],
+                    #[700,666, 1]]                                  ###### getHeliosDistances(coordinates_list) initial start value #######
+depth_list = []#500, 500, 1500, 1500, 2500, 2500, 3500, 3500]     # Some 'random' distances for testing purposes as no real test data is available currently.
 angle = 0                           # readGyro(z) initial start value
 lastAngle = 0                   # Initial "zero" / start orientation
 distance = 0                        # readEncoder() initial start value
@@ -227,10 +227,14 @@ def run(input_queue, output_queue):
         
     for frame in range(200):
         global coordinates_list, angle, distance
-        points = input_queue.get()
+        points_ = input_queue.get()
         coordinates_list = []
-        angle += math.radians(0.1)
-        distance += 10
+        depth_list = []
+        for point in points_:
+            coordinates_list.append([point[0], point[1], point[3]])
+            depth_list.append(point[2])
+        #angle += math.radians(0.1)
+        #distance += 100
         main()
 
 
