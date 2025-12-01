@@ -221,12 +221,10 @@ def run(input_queue):
         #for i in range(50):
         main()
         print(f"Closest_U: {int(closest_u)}")
-        # car[1] += 40
-        # car[0] += 10
-        # car1[1] += 40
-        # car1[0] += 10
-        # car2[1] += 40
-        # car2[0] += 10
+        print(f"inputVectorsBTurn: {inputVectorsBTurn}")
+        print(f"inputVectorsYTurn: {inputVectorsYTurn}")
+        
+
         bx = [p[0] for p in inputVectorsBTurn]
         by = [p[1] for p in inputVectorsBTurn]
         yx = [p[0] for p in inputVectorsYTurn]
@@ -252,7 +250,7 @@ def run(input_queue):
         bscatter.set_offsets(list(zip(bx, by)))
         cscatter.set_offsets(list(zip(cx, cy)))
         line.set_data(x_smooth, y_smooth)
-        plt.pause(0.001)
+        plt.pause(0.0001)
 
 time_end = time.time() # stop time
 print(f"Runtime: {time_end - time_start:.5f} seconds")

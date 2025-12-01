@@ -43,8 +43,8 @@ def one_frame_cone_positions(coordinates_list, depth_list, fov, image_width, ima
     # image_width: width of the image in pixels 
     # image height: height of the image in pixels
 
-    print(f"input list: {coordinates_list}")
-    print(f"input1 list: {depth_list}")
+    # print(f"input list: {coordinates_list}")
+    # print(f"depth list: {depth_list}")
 
     #Define ouput list
     Processed_list = []
@@ -54,7 +54,7 @@ def one_frame_cone_positions(coordinates_list, depth_list, fov, image_width, ima
         if depth_list[i] < 6000:
             Processed_list.append(pixel_to_relative_coordinates(vector, depth_list[i], fov, image_width, image_height)) ######## Add cone type into the data here ##
     
-    print(f"Output list {Processed_list}")
+    # print(f"Output list {Processed_list}")
 
     return Processed_list
 
@@ -181,7 +181,7 @@ def main():
     matchPoints(newPoints, oldPoints)
     # Export 'oldPoints' to use later in pipeline (M121)
     roundPoints(oldPoints)
-    print(f"OutFromM113: {oldPoints}")
+    # print(f"OutFromM113: {oldPoints}")
 
 ######### run ###########
 
@@ -257,7 +257,7 @@ def run(input_queue, output_queue):
 
 
         output_queue.put(oldPoints)
-        print(f"OutFromM113nr2: {oldPoints} {time.time()}")
+        print(f"OutFromM113: {oldPoints} {time.time()}")
         # plt.pause(0.01)
 
 
