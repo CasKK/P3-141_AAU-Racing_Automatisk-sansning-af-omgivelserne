@@ -53,7 +53,7 @@ void encoderISR() {
 int P_control(float desired_speed, float current_rpm) {
   const float Kp = 0.2f;           // Reduced gain for stability
   const float deadband = 3.0f;     // RPM deadband to avoid chasing noise
-  const int min_us = 1250;        // Spin start point
+  const int min_us = 1600;        // Spin start point
   const int max_us = 2000;
 
   static int lastOutput = min_us + 50;
