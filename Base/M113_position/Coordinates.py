@@ -235,29 +235,16 @@ def run(input_queue, output_queue):
         #angle += math.radians(0.1)
         #distance += 100
         main()
-
-
-
-        # blueList = []
-        # yellowList = []
-        # for point in oldPoints:
-        #     if point[2] == 0:
-        #         blueList.append(point)
-        #     else:
-        #         yellowList.append(point)
-
-        # bxs = [p[0] for p in blueList]
-        # bys = [p[1] for p in blueList]
-        # yxs = [p[0] for p in yellowList]
-        # yys = [p[1] for p in yellowList]
-
-        # ysc.set_offsets(list(zip(yxs, yys)))
-        # bsc.set_offsets(list(zip(bxs, bys)))
-
-
+        # Enforce max queue length of 5
+        if output_queue.qsize() >= 5:
+            try:
+                output_queue.get_nowait()  # remove oldest item
+            except:
+                pass
 
         output_queue.put(oldPoints)
-        print(f"OutFromM113: {oldPoints} {time.time()}")
+
+        print(f"OutFromM113nr2: {oldPoints} {time.time()}")
         # plt.pause(0.01)
 
 
