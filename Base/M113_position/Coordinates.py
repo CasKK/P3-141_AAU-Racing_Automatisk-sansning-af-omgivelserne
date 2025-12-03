@@ -4,7 +4,7 @@ import plotly.graph_objects as go
 import matplotlib.pyplot as plt
 import math
 import time
-
+import serial
 
 
 # Following Code Will, use an input image coordinate and depth to generate xy vector to a cone for a Driverless Vehicle
@@ -185,47 +185,25 @@ def main():
 
 ######### run ###########
 
-def run(input_queue, output_queue):
-    
-        
-
-
-################### Post program plot and stuff ####################
-
-
-#if __name__ == "__main__": ######################
-
-    # blueList = []
-    # yellowList = []
-
-    # for point in oldPoints:
-    #     if point[2] == 0:
-    #         blueList.append(point)
-    #     else:
-    #         yellowList.append(point)
-
-    # # print(blueList)
-    # # print(yellowList)
-
-    # plt.ion()
-    # fig, ax = plt.subplots()
-    # fig.set_size_inches(6, 6)
-    # plt.xlim(-3000, 3000)
-    # plt.ylim(-500, 6000)
-    # bxs = [p[0] for p in blueList]
-    # bys = [p[1] for p in blueList]
-    # yxs = [p[0] for p in yellowList]
-    # yys = [p[1] for p in yellowList]
-
-    # ysc = ax.scatter(yxs, yys, c='yellow', edgecolors='black')
-    # bsc = ax.scatter(bxs, bys, c='blue', edgecolors='black')
-
-    # ax.set_aspect('equal')
-
+def run(input_queue, output_queue, serial_queue):
     while True: ##########################
-        
-    #for frame in range(200):
         global coordinates_list, depth_list, angle, distance
+        wheel_diameter = 577.6 # in mm
+        pulses_per_revolution = 100
+        line = serial_queue.get()
+        if line:
+            try:
+                angle_str, encoder_str = line.split(',')
+                angle = float(angle_str)
+                distance = int(encoder_str)
+                distance = distance*(wheel_diameter * math.pi) / pulses_per_revolution
+
+                print("Angle:", angle, "Encoder:", distance)
+
+            except ValueError:
+                # Handle malformed input
+                print("Bad line:", line)
+    #for frame in range(200):
         points_ = input_queue.get()
         coordinates_list = []
         depth_list = []

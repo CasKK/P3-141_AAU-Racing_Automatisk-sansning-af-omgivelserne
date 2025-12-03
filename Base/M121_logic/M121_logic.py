@@ -6,7 +6,7 @@ import matplotlib.pyplot as plt
 from matplotlib.patches import FancyArrowPatch
 import plotly.express as px
 from scipy.interpolate import splprep, splev
-
+import serial
 
 # inputVectorsB = [[-368.0, 540.0, 0],
 #                 [-381.0, 2580.0, 0],
@@ -161,7 +161,7 @@ def main():
 
 ############### some run stuff ###############
 
-def run(input_queue):
+def run(input_queue, serial_queue):
     global inputVectorsBTurn, inputVectorsYTurn
     main()
     plt.ion()
@@ -198,6 +198,7 @@ def run(input_queue):
     ax.set_aspect('equal')
     
     while True:
+           
         points = input_queue.get()
         print(f"M121Points: {points} {time.time()}")
         
@@ -210,16 +211,12 @@ def run(input_queue):
             else:
                 inputVectorsYTurn.append(point)
 
-
-################# Post program stuff #####################
-
-
-#if __name__ == "__main__":
-
-        
-
-        #for i in range(50):
         main()
+        # Ensure the value is an int in 0–255
+        angle_byte = max(0, min(255, int(steer_now)))
+
+        # Convert to single byte
+        serial_queue.put(bytes([angle_byte]))
         print(f"Closest_U: {int(closest_u)}")
         print(f"inputVectorsBTurn: {inputVectorsBTurn}")
         print(f"inputVectorsYTurn: {inputVectorsYTurn}")
