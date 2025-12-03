@@ -230,7 +230,7 @@ def run(output_queue):
         #     coordinates_list.append([point[0], point[1], point[3]])
         #     depth_list.append(point[2])
         angle += math.radians(0.1)
-        distance += 10
+        distance += 50
         main()
 
         coordinates_listB = []

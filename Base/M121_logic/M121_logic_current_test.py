@@ -81,9 +81,9 @@ def calculateCenters(distanceListA, distanceListB):############# Canculate cente
     # distanceListA = copy.deepcopy(distanceListA)
     # distanceListB = copy.deepcopy(distanceListB)
     # print(car)
-    print(f"if {distanceListA[0][3]} > {distanceListB[0][3]}")
-    if distanceListA[0][3] > distanceListB[0][3] + 200:
-        print("someFix")
+    # print(f"if {distanceListA[0][3]} > {distanceListB[0][3]}")
+    # if distanceListA[0][3] > distanceListB[0][3] + 200:
+    #     print("someFix")
 
     for i, (vecA, vecB) in enumerate(zip(distanceListA, distanceListB)):
         centers.append([(vecA[0] + vecB[0]) / 2, (vecA[1] + vecB[1]) / 2])
@@ -94,6 +94,11 @@ def calculateCenters(distanceListA, distanceListB):############# Canculate cente
     for i, center in enumerate(centers):
         centers[i].append(np.sqrt(center[0]**2 + center[1]**2))
     centers = np.array(sorted(centers, key=lambda x: x[-2]))
+    _, idx = np.unique(centers, axis=0, return_index=True)
+    centers = centers[np.sort(idx)]
+    if len(centers) < 6:
+        centers = np.array([car.copy(), [0, 1600], [0, 1700], [0, 1800], [0, 1900], [0, 2000]])
+    
     # print(centers)
     return centers
 
