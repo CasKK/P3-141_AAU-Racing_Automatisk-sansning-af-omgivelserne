@@ -6,7 +6,7 @@ import matplotlib.pyplot as plt
 from matplotlib.patches import FancyArrowPatch
 import plotly.express as px
 from scipy.interpolate import splprep, splev
-import serial
+
 
 # inputVectorsB = [[-368.0, 540.0, 0],
 #                 [-381.0, 2580.0, 0],
@@ -81,7 +81,8 @@ def calculateCenters(distanceListA, distanceListB):############# Canculate cente
     # distanceListA = copy.deepcopy(distanceListA)
     # distanceListB = copy.deepcopy(distanceListB)
     # print(car)
-    if distanceListA[2] > distanceListB[2] + 500:
+    print(f"if {distanceListA[0][3]} > {distanceListB[0][3]}")
+    if distanceListA[0][3] > distanceListB[0][3] + 200:
         print("someFix")
 
     for i, (vecA, vecB) in enumerate(zip(distanceListA, distanceListB)):
@@ -107,7 +108,7 @@ def BSpline(points):########### Make and fit Basis-spline ###############
             t = np.append(t, d)
     t = t / t[-1]  # normalize between 0--1
     
-    tck, u = splprep([points[:,0], points[:,1]], u=t, s=50000, k=5)
+    tck, u = splprep([points[:,0], points[:,1]], u=t, s=30000, k=5)
     u_fine = np.linspace(0, 1, 800)
     x_u, y_u = splev(u_fine, tck)
     dx_u, dy_u = splev(u_fine, tck, der=1)
@@ -159,12 +160,13 @@ def main():
     global steering, steer_now
     steering = np.arctan(L * kp) # 3-line steering-angle bicycle formula
     steer_now = steering[int(closest_u)]
+    print(f"steer_now: {steer_now}")
 
 ######## Export 's' (speed) and 'steer_now' (steering angle). ##########
 
 ############### some run stuff ###############
 
-def run(input_queue, serial_queue):
+def run(input_queue):
     global inputVectorsBTurn, inputVectorsYTurn
     main()
     plt.ion()
@@ -201,28 +203,25 @@ def run(input_queue, serial_queue):
     ax.set_aspect('equal')
     
     while True:
-           
-        points = input_queue.get()
-        print(f"M121Points: {points} {time.time()}")
+        inputVectorsBTurn, inputVectorsYTurn = input_queue.get()
+        # print(f"M121Points: {points} {time.time()}")
         
-        inputVectorsBTurn = []
-        inputVectorsYTurn = []
+        # inputVectorsBTurn = []
+        # inputVectorsYTurn = []
 
-        for point in points:
-            if point[2] == 0:
-                inputVectorsBTurn.append(point)
-            else:
-                inputVectorsYTurn.append(point)
+        # for point in points:
+        #     if point[2] == 0:
+        #         inputVectorsBTurn.append(point)
+        #     else:
+        #         inputVectorsYTurn.append(point)
 
+#if __name__ == "__main__":
+
+        #for i in range(50):
         main()
-        # Ensure the value is an int in 0–255
-        angle_byte = max(0, min(255, int(steer_now)))
-
-        # Convert to single byte
-        serial_queue.put(bytes([angle_byte]))
-        print(f"Closest_U: {int(closest_u)}")
-        print(f"inputVectorsBTurn: {inputVectorsBTurn}")
-        print(f"inputVectorsYTurn: {inputVectorsYTurn}")
+        # print(f"Closest_U: {int(closest_u)}")
+        # print(f"inputVectorsBTurn: {inputVectorsBTurn}")
+        # print(f"inputVectorsYTurn: {inputVectorsYTurn}")
         
 
         bx = [p[0] for p in inputVectorsBTurn]
@@ -250,7 +249,7 @@ def run(input_queue, serial_queue):
         bscatter.set_offsets(list(zip(bx, by)))
         cscatter.set_offsets(list(zip(cx, cy)))
         line.set_data(x_smooth, y_smooth)
-        plt.pause(0.0001)
+        plt.pause(0.001)
 
 time_end = time.time() # stop time
 print(f"Runtime: {time_end - time_start:.5f} seconds")

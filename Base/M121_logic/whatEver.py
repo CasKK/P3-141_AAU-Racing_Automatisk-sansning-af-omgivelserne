@@ -3,6 +3,7 @@ import plotly.express as px
 import pandas as pd
 import time
 import copy
+import math
 
 
 def closestNP(vectorListA, vectorListB):########### Sort two point lists based on distance from (0,0) ############
@@ -98,6 +99,20 @@ def BSpline1232(): #### Some potential optimizations for BSpline #######
     # x_smooth = spl_x(t_fine)
     # y_smooth = spl_y(t_fine)
 
+def rotatePointAroundPoint(point, car, angle):
+    x = point[0]
+    y = point[1]
+    lastAngle = angle           #################
+    angle = lastAngle - angle   #################
+    cos = math.cos(angle)
+    sin = math.sin(angle)
+    temp = ((x-car[0])*cos - (y-car[1])*sin) + car[0]
+    y = ((x-car[0])*sin + (y-car[1])*cos) + car[1]
+    x = temp
+    return
+
+def movePoint(oldPoint, distance):
+    oldPoint[1] -= distance
 
 ############## Program ##################
 
