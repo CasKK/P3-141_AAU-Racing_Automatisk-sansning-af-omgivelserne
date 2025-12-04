@@ -152,7 +152,6 @@ oldPointsY = [[300,1, 1],[300,755, 1],[300,1505, 1]] #,[300,6000],[-300,6000]] #
 matchPoints(newPointsB, oldPointsB)
 matchPoints(newPointsY, oldPointsY)
 
-
 ################ Program (loop) ##############
 """When new data is ready, the predicted cone locations are calculated (based on encoder and gyro/magno). 
 Then the old and new points are matched."""
@@ -187,74 +186,33 @@ def main():
 
 ######### run ###########
 
-def run(output_queue):
-
-
-#if __name__ == "__main__": ######################
-
-    # blueList = []
-    # yellowList = []
-
-    # for point in oldPoints:
-    #     if point[2] == 0:
-    #         blueList.append(point)
-    #     else:
-    #         yellowList.append(point)
-
-    # # print(blueList)
-    # # print(yellowList)
-
-    # plt.ion()
-    # fig, ax = plt.subplots()
-    # fig.set_size_inches(6, 6)
-    # plt.xlim(-3000, 3000)
-    # plt.ylim(-500, 6000)
-    # bxs = [p[0] for p in blueList]
-    # bys = [p[1] for p in blueList]
-    # yxs = [p[0] for p in yellowList]
-    # yys = [p[1] for p in yellowList]
-
-    # ysc = ax.scatter(yxs, yys, c='yellow', edgecolors='black')
-    # bsc = ax.scatter(bxs, bys, c='blue', edgecolors='black')
-
-    # ax.set_aspect('equal')
-
+def run(output_queue, serial_queue):
+ 
     #while True: ##########################
     
     for frame in range(200):
         global coordinates_listB, coordinates_listY, depth_listB, depth_listY, angle, distance #
+        wheel_circumference = 577.6 # in mm
+        pulses_per_revolution = 100
+        angle, encoder = serial_queue.get()
+        
+        distance = encoder * wheel_circumference / pulses_per_revolution
+        print("Angle:", angle, "   distance:", distance)
+
         # points_ = input_queue.get()
         # coordinates_list = []
         # depth_list = []
         # for point in points_:
         #     coordinates_list.append([point[0], point[1], point[3]])
         #     depth_list.append(point[2])
-        angle += math.radians(0.1)
-        distance += 50
+        angle = math.radians(angle)
+        # distance += 50
         main()
 
         coordinates_listB = []
         coordinates_listY = []
         depth_listB = []
         depth_listY = []
-
-        # blueList = []
-        # yellowList = []
-        # for point in oldPoints:
-        #     if point[2] == 0:
-        #         blueList.append(point)
-        #     else:
-        #         yellowList.append(point)
-
-        # bxs = [p[0] for p in blueList]
-        # bys = [p[1] for p in blueList]
-        # yxs = [p[0] for p in yellowList]
-        # yys = [p[1] for p in yellowList]
-
-        # ysc.set_offsets(list(zip(yxs, yys)))
-        # bsc.set_offsets(list(zip(bxs, bys)))
-
-
 
         output_queue.put((oldPointsB, oldPointsY))
         # print(f"OutFromM113: {oldPoints} {time.time()}")
