@@ -32,4 +32,4 @@ if __name__ == "__main__":
         m111.terminate()
         m113.terminate()
         m121.terminate()
-        serial.terminate()
+        #serial.terminate()
