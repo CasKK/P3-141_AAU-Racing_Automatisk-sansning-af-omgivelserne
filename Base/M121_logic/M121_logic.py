@@ -221,11 +221,12 @@ def run(input_queue, serial_queue):
                 inputVectorsYTurn.append(point)
 
         main()
-        # Ensure the value is an int in 0–255
-        angle_byte = max(0, min(255, int(steer_now)))
 
-        # Convert to single byte
-        serial_queue.put(bytes([angle_byte]))
+
+        angle_byte = max(0, min(255, int(steer_now))) # Ensure the value is an int in 0–255
+        serial_queue.put(bytes([angle_byte]))         # Convert to single byte
+
+
         print(f"Closest_U: {int(closest_u)}")
         print(f"inputVectorsBTurn: {inputVectorsBTurn}")
         print(f"inputVectorsYTurn: {inputVectorsYTurn}")
