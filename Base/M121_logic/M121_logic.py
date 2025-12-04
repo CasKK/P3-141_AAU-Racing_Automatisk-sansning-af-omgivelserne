@@ -223,8 +223,9 @@ def run(input_queue, serial_queue):
         main()
 
 
-        angle_byte = max(0, min(255, int(steer_now))) # Ensure the value is an int in 0–255
-        serial_queue.put(bytes([angle_byte]))         # Convert to single byte
+        steer_deg = np.degrees(steer_now)
+        steer_deg = np.clip(steer_deg, -90, 90)
+        serial_queue.put(bytes([steer_deg + 90]))         # Convert to single byte
 
 
         print(f"Closest_U: {int(closest_u)}")
