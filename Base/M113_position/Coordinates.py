@@ -100,26 +100,20 @@ def rotatePointsAroundPoint(points, car, angle):
         point[0] = ((x-car[0])*cos - (y-car[1])*sin) + car[0]
         point[1] = ((x-car[0])*sin + (y-car[1])*cos) + car[1]
 
-def rotatePointAroundPoint(point, car, angle):
-    x = point[0]
-    y = point[1]
-    lastAngle = angle           #################
-    angle = lastAngle - angle   #################
-    cos = math.cos(angle)
-    sin = math.sin(angle)
-    temp = ((x-car[0])*cos - (y-car[1])*sin) + car[0]
-    y = ((x-car[0])*sin + (y-car[1])*cos) + car[1]
-    x = temp
-    return
-
 def movePoints(oldPoints, distance):
     for i in range(len(oldPoints) - 1, -1, -1):  # Loop from last to first
         oldPoints[i][1] -= distance
         if oldPoints[i][1] < 0:
             del oldPoints[i]        # removedPoint = points.pop(1)
 
-def movePoint(oldPoint, distance):
-    oldPoint[1] -= distance
+def movePoints1(oldPointsA, oldPointsB, distance):
+    for i in range(len(oldPointsB) - 1, -1, -1):  # Loop from last to first
+        oldPointsB[i][1] -= distance
+    for i in range(len(oldPointsA) - 1, -1, -1):  # Loop from last to first
+        oldPointsA[i][1] -= distance
+        if oldPointsA[i][1] < 0 and oldPointsB[i][1] < 0:
+            del oldPointsA[i]        # removedPoint = points.pop(1)
+            del oldPointsB[i]
 
 def roundPoints(points):
     for point in points:

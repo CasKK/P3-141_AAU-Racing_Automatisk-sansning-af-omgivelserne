@@ -81,8 +81,9 @@ def calculateCenters(distanceListA, distanceListB):############# Canculate cente
     # distanceListA = copy.deepcopy(distanceListA)
     # distanceListB = copy.deepcopy(distanceListB)
     # print(car)
-    if distanceListA[2] > distanceListB[2] + 500:
-        print("someFix")
+    # print(f"if {distanceListA[0][3]} > {distanceListB[0][3]}")
+    # if distanceListA[0][3] > distanceListB[0][3] + 200:
+    #     print("someFix")
 
     for i, (vecA, vecB) in enumerate(zip(distanceListA, distanceListB)):
         centers.append([(vecA[0] + vecB[0]) / 2, (vecA[1] + vecB[1]) / 2])
@@ -93,6 +94,11 @@ def calculateCenters(distanceListA, distanceListB):############# Canculate cente
     for i, center in enumerate(centers):
         centers[i].append(np.sqrt(center[0]**2 + center[1]**2))
     centers = np.array(sorted(centers, key=lambda x: x[-2]))
+    _, idx = np.unique(centers, axis=0, return_index=True)
+    centers = centers[np.sort(idx)]
+    if len(centers) < 6:
+        centers = np.array([car.copy(), [0, 1600], [0, 1700], [0, 1800], [0, 1900], [0, 2000]])
+    
     # print(centers)
     return centers
 
@@ -215,11 +221,13 @@ def run(input_queue): #serial_queue
                 inputVectorsYTurn.append(point)
 
         main()
-        # Ensure the value is an int in 0–255
-        #angle_byte = max(0, min(255, int(steer_now)))
 
-        # Convert to single byte
-        #serial_queue.put(bytes([angle_byte]))
+
+        steer_deg = np.degrees(steer_now)
+        steer_deg = np.clip(steer_deg, -90, 90)
+        #serial_queue.put(bytes([steer_deg + 90]))         # Convert to single byte
+
+
         print(f"Closest_U: {int(closest_u)}")
         print(f"inputVectorsBTurn: {inputVectorsBTurn}")
         print(f"inputVectorsYTurn: {inputVectorsYTurn}")
