@@ -171,7 +171,7 @@ def main():
 
 ############### some run stuff ###############
 
-def run(input_queue):
+def run(input_queue, serial_queue):
     global inputVectorsBTurn, inputVectorsYTurn
     main()
     plt.ion()
@@ -220,14 +220,15 @@ def run(input_queue):
         #     else:
         #         inputVectorsYTurn.append(point)
 
-#if __name__ == "__main__":
-
-        #for i in range(50):
         main()
         # print(f"Closest_U: {int(closest_u)}")
         # print(f"inputVectorsBTurn: {inputVectorsBTurn}")
         # print(f"inputVectorsYTurn: {inputVectorsYTurn}")
         
+        steer_deg = np.degrees(steer_now)
+        steer_deg = np.clip(steer_deg, -90, 90)
+        serial_queue.put(int(steer_deg) + 90) 
+
         if len(inputVectorsBTurn) == 0:
             bx = [-100, 100]
             by = [100, 100]
