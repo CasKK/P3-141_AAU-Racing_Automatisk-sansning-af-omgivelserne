@@ -5,7 +5,7 @@ import time
 import subprocess
 import math
 import glob
-from .helios_create_image import CreateDevice, HeliosRunning, HeliosEnd
+from helios_create_image import CreateDevice, HeliosRunning, HeliosEnd
 import threading
 kernel = np.ones([5,5], np.uint8)
 debug = False
@@ -243,44 +243,53 @@ def CompareWithHelios(contours, frame, depth):
     
     for contour in contours:
         c, x, y, w, h, d = contour
+      
+
         mask = np.zeros_like(frame[:, :, 0])
-        cv2.drawContours(mask, [c], -1, 255, -1)
-        depthMask = depth[mask==1]
-        hist, _ = np.histogram(depthMask, bins=120, range=(0,6000))
+
+        cv2.drawContours(mask, [c], -1, 255, thickness=cv2.FILLED)
+
+        threshold = np.count_nonzero(mask)*0.04
+        
+        depthValues = depth[mask==255]
+        depthValues = depthValues.flatten()[::3]
+        depthValues.sort()
 
         peaks = []
-        countSum, countNumber, countRange = 0, 0, 0
+        currentPeak = []
 
-        for i, count in enumerate(hist):            
-            
-            minDist, maxDist = 0, 0
-
-            if (count < 100):
-                if countNumber > 0:
-                    expan = 2
-                    minDist = i - countRange - expan
-                    maxDist = -1 + expan
-                    peakMask = cv2.inRange(depth, minDist, maxDist)
-                    mean = np.mean(depth[depthMask & (peakMask == 255)])
-                    peaks.append((peakMask, mean, minDist, maxDist))
-                    countSum, countNumber, countRange = 0, 0, 0
+        for i, value in enumerate(depthValues):
+            if i == 0:
+                currentPeak.append(int(value)) 
             else:
-                countSum += i * count
-                countNumber += count
-                countRange += 1
+                if (value - depthValues[i-1]) < 150:
+                    currentPeak.append(int(value))
+                else:
+                    if (len(currentPeak) > threshold):
+                        peaks.append(currentPeak)
+                    currentPeak = []
+                    currentPeak.append(int(value))
 
-        if len(peaks) == 1:
-            _, mean, _, _ = peaks[0]
-            newContours.append((c, x, y, w, h, d, mean))  # Append original contour and its mean
+        if len(peaks)==1:
+            mean = int( sum(peaks[0]) / len(peaks[0]) )
+            newContours.append((x, y, w, h, d, mean))
         elif len(peaks) > 1:
             for p in peaks:
-                peakMask, mean, _, _ = p
-                combinedMask = cv2.bitwise_and(depthMask, peakMask)
+                mean = int( sum(p) / len(p) )
+                innerMask = cv2.inRange(depth, p[0],p[-1])
+                innerMask = cv2.morphologyEx(innerMask, cv2.MORPH_OPEN, kernel, iterations=2)
+                innerMask = cv2.morphologyEx(innerMask, cv2.MORPH_CLOSE, kernel, iterations=2)
+                combinedMask = cv2.bitwise_and(mask, innerMask)
                 cNew, _ = cv2.findContours(combinedMask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-                xNew, yNew, wNew, hNew = cv2.boundingRect(cNew[0])
-                dNew = math.sqrt(hNew**2 + wNew**2)
-                newContours.append((cNew[0], xNew, yNew, wNew, hNew, dNew, mean))
+                if len(cNew) > 0:
+                    for c in cNew:
+                        area = cv2.contourArea(c)
+                        if area > threshold:
+                            xNew, yNew, wNew, hNew = cv2.boundingRect(c)
+                            dNew = math.sqrt(hNew**2 + wNew**2)
+                            newContours.append((xNew, yNew, wNew, hNew, dNew, mean))
 
+        print(f"Peaks: {len(peaks)}")
     return newContours  
 
 def VerifyConesWithEdges(bboxes, edges, threshold):
@@ -312,16 +321,16 @@ def VerifyConesWithEdges(bboxes, edges, threshold):
 def MergeBbox(bboxBlue, bboxYellow):
     def CenterCalc(bbox, centrum):
         for b in bbox:
-            _,x,y,w,h,d = b
+            x,y,w,h,diameter,depth = b
             cx = x+w/2
             cy = y+h/2
-            centrum.append((cx,cy, w, h,x,y,d))
+            centrum.append((cx, cy, w, h, x, y, diameter, depth))
     def MergeCenters(centrum, merged, mergedCorner, mergedCenter):
         for c in centrum: # go through each item in the list of center locations
             found = False # Found is false at the start since the first center is not close to any of the others since there is none to compare to
             for i, m in enumerate(merged): # For each iteration i, and m in enumerate(merged) i is the iteration and m is the corresponding entry in merged
-                if (abs(c[1]-m[1]) < c[6]*2) and (abs(c[0]-m[0]) < c[6]*0.5): # Checks to see if the center c is close enough to the entry m
-                    merged[i] = ((c[0]+m[0])/2, (c[1]+m[1])/2, abs(c[1]-m[1])*1.5, abs(c[0]-m[0])*3) # If it is close enough a new center is calculated 
+                if (abs(c[1]-m[1]) < c[6]*2) and (abs(c[0]-m[0]) < c[6]*0.5) and (abs(c[7]-m[4]) < 500): # Checks to see if the center c is close enough to the entry m
+                    merged[i] = ((c[0]+m[0])/2, (c[1]+m[1])/2, abs(c[1]-m[1])*1.5, abs(c[0]-m[0])*3, abs((c[7]+m[4])/2)) # If it is close enough a new center is calculated 
                     x1 = min(c[0]-c[2]/2, m[0]-m[2]/2) # The minimum and maximum values for the new center is created
                     y1 = min(c[1]-c[3]/2, m[1]-m[3]/2)
                     x2 = max(c[0]+c[2]/2, m[0]+m[2]/2)
@@ -332,12 +341,12 @@ def MergeBbox(bboxBlue, bboxYellow):
                     found = True # set found to true
                     break # go out of the for loop so the next center will be assed 
             if not found: # If found != True it just adds the original positions
-                merged.append((c[0],c[1],c[2],c[3])) #This is the center position
+                merged.append((c[0],c[1],c[2],c[3],c[7])) #This is the center position
                 mergedCorner.append((c[4],c[5],c[2],c[3])) #This is for the upper corner and correct bbox creation
                 
                 cx = c[4]+c[2]/2
                 cy = c[5]+c[3]/2
-                mergedCenter.append((cx,cy))
+                mergedCenter.append((cx,cy,c[7]))
 
     centrumB, centrumY,  mergedBlue, mergedYellow, mergedBlueCorner, mergedYellowCorner, mergedCenterBlue, mergedCenterYellow = [], [], [], [], [], [], [], []
     CenterCalc(bboxBlue, centrumB)
@@ -386,7 +395,22 @@ def DistToCenter (conesBlue, conesYellow, depth):
     
     return xyzToCones
 
+def CombineBlueAndYellow(conesBlue, conesYellow):
+    
+    combinedArray = []
+    
+    for cone in conesBlue:
+        x, y, z = cone
+        x, y, z = int(x), int(y), int(z) 
 
+        combinedArray.append((x, y, z, 0))
+
+    for cone in conesYellow:
+        x, y, z = cone
+        x, y, z = int(x), int(y), int(z) 
+        combinedArray.append((x, y, z, 1))
+    
+    return combinedArray
 
 
 latestDistanceFrame = None
@@ -440,6 +464,8 @@ def main():
         # uses the masks in found Contours to find the locations of objects
         bboxesBlue, bboxesYellow = FindContours(maskBlue, maskYellow)
 
+        
+
         #set_nodes(device.nodemap)
         
         # bbBlue = CompareWithHelios(bboxesBlue, frame, depth)
@@ -458,9 +484,18 @@ def main():
         bboxesBlueVerified = VerifyConesWithEdges(bboxesBlue, combine, 0.1)
         bboxesYellowVerified = VerifyConesWithEdges(bboxesYellow, combine, 0.3)
 
-        bboxBlue, bboxYellow, _, _, centerPointsBlue, centerPointsYellow = MergeBbox(bboxesBlueVerified , bboxesYellowVerified)
+        #print(bboxesYellowVerified)
 
-        positions = DistToCenter(centerPointsBlue, centerPointsYellow, depth)
+        bboxesBlueDepthCompare = CompareWithHelios(bboxesBlue, frame, depth)
+        bboxesYellowDepthCompare = CompareWithHelios(bboxesYellow, frame, depth)
+
+        #print(bboxesYellowDepthCompare)
+
+        bboxBlue, bboxYellow, _, _, centerPointsBlue, centerPointsYellow = MergeBbox(bboxesBlueDepthCompare , bboxesYellowDepthCompare)
+
+        #print(centerPointsYellow)
+
+        positions = CombineBlueAndYellow(centerPointsBlue, centerPointsYellow)# DistToCenter(centerPointsBlue, centerPointsYellow, depth)
         print(f"ConePos: {positions}")
 
 
@@ -485,7 +520,7 @@ def main():
         # Show the combined mask and frame with bboxes
         #cv2.imshow("mask", mask)
         # prints FPS
-        # print(f"FPS: {fps}")
+        print(f"FPS: {fps}")
         if cv2.waitKey(1) == ord('q'):
             break
     

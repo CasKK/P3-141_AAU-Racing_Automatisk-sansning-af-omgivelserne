@@ -1,4 +1,4 @@
-arena-api @ file:///home/aaujetson67/Downloads/arena_api-2.7.1-py3-none-any/arena_api-2.7.1-py3-none-any.whl#sha256=786ad7543c65d0eb92fd6ef4558ff6e6c46e7d8c2270fd3307753778e51935c4
+arena-api @ file:///home/aaujetson67/Desktop/Arena_api/arena_api-2.7.1-py3-none-any/arena_api-2.7.1-py3-none-any.whl#sha256=786ad7543c65d0eb92fd6ef4558ff6e6c46e7d8c2270fd3307753778e51935c4
 attrs==25.4.0
 blinker==1.9.0
 bme680==2.0.0
@@ -17,7 +17,6 @@ Flask==3.1.2
 fonttools==4.60.1
 idna==3.11
 importlib_metadata==8.7.0
-imusensor @ git+https://github.com/niru-5/imusensor.git@488aebe2dec012f1813ab94195afa7e8af177814
 itsdangerous==2.2.0
 Jetson.GPIO==2.1.12
 Jinja2==3.1.6
@@ -45,7 +44,6 @@ referencing==0.37.0
 requests==2.32.5
 retrying==1.4.2
 rpds-py==0.28.0
-Seeed-grove.py @ file:///home/aaujetson67/grove.py/grove.py
 sgp30==0.1.6
 six==1.17.0
 smbus==1.1.post2

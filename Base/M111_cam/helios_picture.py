@@ -166,8 +166,8 @@ if __name__ == "__main__":
         pf.value = PixelFormat.Coord3D_C16Y8; depth_fmt = "Coord3D_C16Y8"
 
     cmap_id = COLORMAPS[args.colormap]
-    cv2.namedWindow(args.win, cv2.WINDOW_NORMAL)
-    cv2.setWindowProperty(args.win, cv2.WND_PROP_FULLSCREEN, cv2.WINDOW_FULLSCREEN)
+    # cv2.namedWindow(args.win, cv2.WINDOW_NORMAL)
+    # cv2.setWindowProperty(args.win, cv2.WND_PROP_FULLSCREEN, cv2.WINDOW_FULLSCREEN)
 
     ema_state = None
     warm_state = {"warmup": args.warmup, "n": 0, "lo": 1<<30, "hi": 0, "frozen": False}
