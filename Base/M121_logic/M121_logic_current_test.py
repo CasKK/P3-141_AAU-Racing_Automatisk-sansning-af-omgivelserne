@@ -228,11 +228,16 @@ def run(input_queue):
         # print(f"inputVectorsBTurn: {inputVectorsBTurn}")
         # print(f"inputVectorsYTurn: {inputVectorsYTurn}")
         
-
-        bx = [p[0] for p in inputVectorsBTurn]
-        by = [p[1] for p in inputVectorsBTurn]
-        yx = [p[0] for p in inputVectorsYTurn]
-        yy = [p[1] for p in inputVectorsYTurn]
+        if len(inputVectorsBTurn) == 0:
+            bx = [-100, 100]
+            by = [100, 100]
+            yx = [-100, 100]
+            yy = [200, 200]
+        else: 
+            bx = [p[0] for p in inputVectorsBTurn]
+            by = [p[1] for p in inputVectorsBTurn]
+            yx = [p[0] for p in inputVectorsYTurn]
+            yy = [p[1] for p in inputVectorsYTurn]
         cx = [p[0] for p in centers]
         cy = [p[1] for p in centers]
 
