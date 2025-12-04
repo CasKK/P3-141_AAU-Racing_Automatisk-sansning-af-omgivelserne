@@ -116,7 +116,7 @@ void setup() {
   pinMode(ENCODER_PIN, INPUT);
 
   esc.attach(11, 1000, 2000);
-  steering.attach(7);
+  steering.attach(10);
   steering.write(val);
   delay(500);
   Serial.println("Arduino Is ready :)");
@@ -196,8 +196,6 @@ void Encoder(){
 void ServoMotor(){
   ReadSerial();
   if (newData){
-    Serial.print("Wheel angle temp: ");
-    Serial.println(wheelAngleTemp);
     if (wheelAngleTemp > 10){
       wheelAngle = wheelAngleTemp;
       if (wheelAngle >= 0 && wheelAngle <= 180) {             // sanity check
