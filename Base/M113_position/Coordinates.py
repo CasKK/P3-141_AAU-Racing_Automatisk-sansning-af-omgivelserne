@@ -87,8 +87,6 @@ def matchPoints(points, oldPoints, maxDist = 200*200):######################## C
     #         movePoint(oldPoint, distance)
     #         updated.add(i)
 
-
-
     # print(pointList)
 
 def rotatePointsAroundPoint(points, car, angle):
