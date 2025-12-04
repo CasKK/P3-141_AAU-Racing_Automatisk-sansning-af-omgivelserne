@@ -8,6 +8,7 @@ import glob
 from helios_create_image import CreateDevice, HeliosRunning, HeliosEnd, set_nodes
 import threading
 kernel = np.ones([5,5], np.uint8)
+latestDistanceFrame = None 
 
 
 
@@ -362,6 +363,7 @@ def main():
     device ,scale_z, pixelFormat_initial, operating_mode_initial,  exposure_time_initial, conversion_gain_initial, image_accumulation_initial, spatial_filter_initial, confidence_threshold_initial = CreateDevice()
 
 
+
     def HeliosThread(device, scale_z):
         global latestDistanceFrame
         try:
@@ -374,8 +376,7 @@ def main():
         except Exception as e:
             print(f"Fejl i HeliosThread: {e}")
 
-    global latestDistanceFrame
-    latestDistanceFrame = None 
+
     
     t = threading.Thread(target=HeliosThread, args=(device, scale_z), daemon=True)
     t.start()
@@ -399,7 +400,7 @@ def main():
              print("Vent på data fra Helios")
         else:
              heatmap, depth = latestDistanceFrame
-             cv2.imshow("Helios Heatmap", depth)
+             cv2.imshow("Helios depthmap", depth)
 
         # Get the masks created in Masking()
         HSV, maskBlue, maskYellow = Masking(frame, blueUpper, blueLower, yellowUpper, yellowLower)
@@ -444,7 +445,7 @@ def main():
         # Show the combined mask and frame with bboxes
         #cv2.imshow("mask", mask)
         # prints FPS
-        print(f"FPS: {fps}")
+        #print(f"FPS: {fps}")
         if cv2.waitKey(1) == ord('q'):
             break
     

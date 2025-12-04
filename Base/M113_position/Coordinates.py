@@ -185,24 +185,24 @@ def main():
 
 ######### run ###########
 
-def run(input_queue, output_queue, serial_queue):
+def run(input_queue, output_queue): #serial_queue
     while True: ##########################
         global coordinates_list, depth_list, angle, distance
-        wheel_diameter = 577.6 # in mm
-        pulses_per_revolution = 100
-        line = serial_queue.get()
-        if line:
-            try:
-                angle_str, encoder_str = line.split(',')
-                angle = float(angle_str)
-                distance = int(encoder_str)
-                distance = distance*(wheel_diameter * math.pi) / pulses_per_revolution
+        # wheel_diameter = 577.6 # in mm
+        # pulses_per_revolution = 100
+        # line = serial_queue.get()
+        # if line:
+        #     try:
+        #         angle_str, encoder_str = line.split(',')
+        #         angle = float(angle_str)
+        #         distance = int(encoder_str)
+        #         distance = distance*(wheel_diameter * math.pi) / pulses_per_revolution
 
-                print("Angle:", angle, "Encoder:", distance)
+        #         print("Angle:", angle, "Encoder:", distance)
 
-            except ValueError:
-                # Handle malformed input
-                print("Bad line:", line)
+        #     except ValueError:
+        #         # Handle malformed input
+        #         print("Bad line:", line)
     #for frame in range(200):
         points_ = input_queue.get()
         coordinates_list = []

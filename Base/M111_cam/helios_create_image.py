@@ -224,9 +224,9 @@ def HeliosRunning(device, scale_z, timeout=200):
     #     print(f"{TAB1}Error: Could not get buffer from device")
     #     return None, None
     
-    # if buffer_3d is None:
-    #      print(f"{TAB1}Error: Received empty buffer.")
-    #      return None, None
+    if buffer_3d is None:
+         print(f"{TAB1}Error: Received empty buffer.")
+         return None, None
     
     frame, depthOutput = Buffer_to_BGR8(buffer_3d, scale_z, device)
     device.requeue_buffer(buffer_3d)

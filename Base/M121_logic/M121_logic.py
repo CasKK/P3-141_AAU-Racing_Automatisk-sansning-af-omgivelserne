@@ -164,7 +164,7 @@ def main():
 
 ############### some run stuff ###############
 
-def run(input_queue, serial_queue):
+def run(input_queue): #serial_queue
     global inputVectorsBTurn, inputVectorsYTurn
     main()
     plt.ion()
@@ -216,10 +216,10 @@ def run(input_queue, serial_queue):
 
         main()
         # Ensure the value is an int in 0–255
-        angle_byte = max(0, min(255, int(steer_now)))
+        #angle_byte = max(0, min(255, int(steer_now)))
 
         # Convert to single byte
-        serial_queue.put(bytes([angle_byte]))
+        #serial_queue.put(bytes([angle_byte]))
         print(f"Closest_U: {int(closest_u)}")
         print(f"inputVectorsBTurn: {inputVectorsBTurn}")
         print(f"inputVectorsYTurn: {inputVectorsYTurn}")
