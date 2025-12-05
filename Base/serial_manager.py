@@ -13,8 +13,13 @@ def run(read_queue, write_queue):
             if "," in line:
                 try:
                     angle_str, count_str = line.split(',')
-                    angle = float(angle_str)
+                    angle = float(angle_str) 
                     count = float(count_str)
+                    if read_queue.qsize() >= 2:
+                        try:
+                            read_queue.get_nowait()  # remove oldest item
+                        except:
+                            pass
                     read_queue.put((angle, count))
                     print("Angle:", angle, "Count:", count)
                 except ValueError:

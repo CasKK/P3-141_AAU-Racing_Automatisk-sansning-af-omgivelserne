@@ -216,6 +216,12 @@ def run(input_queue, serial_queue): #
 
         steer_deg = np.degrees(steer_now)
         steer_deg = np.clip(steer_deg, -90, 90)
+        if serial_queue.qsize() >= 2:
+            try:
+                serial_queue.get_nowait()  # remove oldest item
+            except:
+                pass
+
         serial_queue.put(bytes([steer_deg + 90]))         # Convert to single byte
 
 
