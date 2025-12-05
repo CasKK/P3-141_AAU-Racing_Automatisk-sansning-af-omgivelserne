@@ -81,8 +81,6 @@ def matchPoints(points, oldPoints, maxDist = 200*200):######################## C
             oldPoints.append(i)
             updated.add(len(oldPoints)-1)
     
-
-    
     # for i, oldPoint in enumerate(oldPoints): # Move old points # Old version
     #     if i not in updated:
     #         rotatePointAroundPoint(oldPoint, car, currentAngle)
@@ -188,25 +186,27 @@ def main():
 
 def run(output_queue, serial_queue):
  
-    #while True: ##########################
+    while True: ##########################
     
-    for frame in range(200):
+    #for frame in range(200):
         global coordinates_listB, coordinates_listY, depth_listB, depth_listY, angle, distance #
         wheel_circumference = 577.6 # in mm
         pulses_per_revolution = 100
-        angle, encoder = serial_queue.get()
         
-        distance = encoder * wheel_circumference / pulses_per_revolution
-        print("Angle:", angle, "   distance:", distance)
-
         # points_ = input_queue.get()
         # coordinates_list = []
         # depth_list = []
         # for point in points_:
         #     coordinates_list.append([point[0], point[1], point[3]])
         #     depth_list.append(point[2])
-        angle = math.radians(angle)
         # distance += 50
+
+        while not serial_queue.empty():
+            angle, encoder = serial_queue.get()
+            distance = encoder * wheel_circumference / pulses_per_revolution
+            print("Angle:", angle, "   distance:", distance) 
+            angle = math.radians(angle)
+
         main()
 
         coordinates_listB = []

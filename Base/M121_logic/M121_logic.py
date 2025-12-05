@@ -170,7 +170,7 @@ def main():
 
 ############### some run stuff ###############
 
-def run(input_queue): #serial_queue
+def run(input_queue, serial_queue): #
     global inputVectorsBTurn, inputVectorsYTurn
     main()
     plt.ion()
@@ -208,35 +208,37 @@ def run(input_queue): #serial_queue
     
     while True:
            
-        points = input_queue.get()
-        print(f"M121Points: {points} {time.time()}")
-        
-        inputVectorsBTurn = []
-        inputVectorsYTurn = []
-
-        for point in points:
-            if point[2] == 0:
-                inputVectorsBTurn.append(point)
-            else:
-                inputVectorsYTurn.append(point)
+        inputVectorsBTurn, inputVectorsYTurn = input_queue.get()
+        print(f"M121Points: {inputVectorsBTurn} --- {inputVectorsYTurn} --- {time.time()}")
 
         main()
 
 
         steer_deg = np.degrees(steer_now)
         steer_deg = np.clip(steer_deg, -90, 90)
-        #serial_queue.put(bytes([steer_deg + 90]))         # Convert to single byte
+        if serial_queue.qsize() >= 2:
+            try:
+                serial_queue.get_nowait()  # remove oldest item
+            except:
+                pass
+
+        serial_queue.put(bytes([steer_deg + 90]))         # Convert to single byte
 
 
-        print(f"Closest_U: {int(closest_u)}")
-        print(f"inputVectorsBTurn: {inputVectorsBTurn}")
-        print(f"inputVectorsYTurn: {inputVectorsYTurn}")
+        # print(f"Closest_U: {int(closest_u)}")
+        # print(f"inputVectorsBTurn: {inputVectorsBTurn}")
+        # print(f"inputVectorsYTurn: {inputVectorsYTurn}")
         
-
-        bx = [p[0] for p in inputVectorsBTurn]
-        by = [p[1] for p in inputVectorsBTurn]
-        yx = [p[0] for p in inputVectorsYTurn]
-        yy = [p[1] for p in inputVectorsYTurn]
+        if len(inputVectorsBTurn) == 0:
+            bx = [-100, 100]
+            by = [100, 100]
+            yx = [-100, 100]
+            yy = [200, 200]
+        else: 
+            bx = [p[0] for p in inputVectorsBTurn]
+            by = [p[1] for p in inputVectorsBTurn]
+            yx = [p[0] for p in inputVectorsYTurn]
+            yy = [p[1] for p in inputVectorsYTurn]
         cx = [p[0] for p in centers]
         cy = [p[1] for p in centers]
 
@@ -258,7 +260,7 @@ def run(input_queue): #serial_queue
         bscatter.set_offsets(list(zip(bx, by)))
         cscatter.set_offsets(list(zip(cx, cy)))
         line.set_data(x_smooth, y_smooth)
-        plt.pause(0.0001)
+        plt.pause(0.001)
 
 time_end = time.time() # stop time
 print(f"Runtime: {time_end - time_start:.5f} seconds")
