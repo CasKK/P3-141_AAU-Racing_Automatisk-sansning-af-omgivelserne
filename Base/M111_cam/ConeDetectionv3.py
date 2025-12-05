@@ -367,6 +367,24 @@ def DrawBoundingBox(box, frame, color):
     cv2.putText(frame, label, (p1[0], p1[1]-5), cv2.FONT_HERSHEY_COMPLEX, 0.7, frameColor, 2, cv2.LINE_AA)
 
 def DistToCenter (conesBlue, conesYellow, depth):
+    blueArray, yellowArray, combinedArray = [], [], []
+    
+    def CalcZ(cones, array, combined):
+        for cone in cones:
+            x, y = cone
+            x, y = int(x), int(y) 
+            z = depth[y,x]
+            z = int(z)
+            array.append((x, y, z))
+        combined.append(array)
+
+    CalcZ(conesBlue, blueArray, combinedArray)
+    CalcZ(conesYellow, yellowArray, combinedArray)
+    
+    return combinedArray
+
+
+def DistToCenterOld (conesBlue, conesYellow, depth):
     xyzToCones = []
     
     for cone in conesBlue:
@@ -384,9 +402,6 @@ def DistToCenter (conesBlue, conesYellow, depth):
         xyzToCones.append((x, y, z, 1))
     
     return xyzToCones
-
-
-
 
 latestDistanceFrame = None
 
@@ -480,6 +495,7 @@ def run(output_queue):
 
         #cv2.imshow("frame", frame)
         cv2.imshow("frame Edges", frameEdges)
+
         #cv2.imshow("Frame with boxes and edges", maskBlue)
         # Show the combined mask and frame with bboxes
         #cv2.imshow("mask", mask)

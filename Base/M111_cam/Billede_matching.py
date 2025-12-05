@@ -10,7 +10,7 @@ def ensure_landscape(img):
     return img
 
 #indlæs billeder
-img1 = cv2.imread("frames/frame_1764073169581.png")#reference Helios
+img1 = cv2.imread("frames/frame_1764928187431.png")#reference Helios
 img2 = cv2.imread("captured_frames/frame_000.png") #skal transformeres Webcam
 
 #sørg for begge billeder er samme orientering
@@ -31,19 +31,33 @@ def select_points(event, x, y, flags, param):
 
 # --- Vælg punkter på billede 1 ---
 img1_copy = img1.copy()
+cv2.namedWindow("Select points", cv2.WINDOW_NORMAL)
+cv2.setWindowProperty("Select points", cv2.WND_PROP_FULLSCREEN, 1)  # Sætter vinduet til fuldskærm
 cv2.imshow("Select points", img1_copy)
 cv2.setMouseCallback("Select points", select_points, param=(img1_copy, points_img1))
 print(f"Klik på {max_points} punkter i Billede 1")
 cv2.waitKey(0)
 cv2.destroyAllWindows()
 
+#gem billede med de valgte punkter
+for point in points_img1:
+    cv2.circle(img1, tuple(point), 5, (0, 0, 255), -1)
+cv2.imwrite("img1WithPoints.png", img1)
+
 # --- Vælg punkter på billede 2 ---
 img2_copy = img2.copy()
+cv2.namedWindow("Select points", cv2.WINDOW_NORMAL)
+cv2.setWindowProperty("Select points", cv2.WND_PROP_FULLSCREEN, 1)  # Sætter vinduet til fuldskærm
 cv2.imshow("Select points", img2_copy)
 cv2.setMouseCallback("Select points", select_points, param=(img2_copy, points_img2))
 print(f"Klik på {max_points} tilsvarende punkter i Billede 2")
 cv2.waitKey(0)
 cv2.destroyAllWindows()
+
+#gem billede med de valgte punkter
+for point in points_img2:
+    cv2.circle(img2, tuple(point), 5, (0, 0, 255), -1)
+cv2.imwrite("img2WithPoints.png", img2)
 
 # --- Konverter til numpy arrays ---
 pts1 = np.array(points_img1, dtype=np.float32)
@@ -56,6 +70,8 @@ print("Transformation matrix H:\n", H)
 #warp billede2 på billede1
 height, width = img1.shape[:2]
 warped_img2 = cv2.warpPerspective(img2, H, (width, height))
+cv2.imwrite("WarpedImg2.png", warped_img2)
+
 blended = cv2.addWeighted(img1, 0.5, warped_img2, 0.5, 0)
 
 #vis resultatet
@@ -71,4 +87,4 @@ plt.show()
 
 #gem transformationsmatricen og gem det blendede billede
 cv2.imwrite("blended_result.png", blended)
-np.save('homography_matrix.npy', H)
+np.save('homography_matrix.txt', H)
