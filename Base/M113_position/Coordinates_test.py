@@ -195,7 +195,8 @@ def run(output_queue, serial_queue):
         while not serial_queue.empty():
             angle, encoder = serial_queue.get()
             distance = encoder * wheel_circumference / pulses_per_revolution
-            print("Angle:", angle, "   distance:", distance)
+            print("Angle:", angle, "   distance:", distance) 
+            angle = math.radians(angle)
 
         # points_ = input_queue.get()
         # coordinates_list = []
@@ -203,7 +204,6 @@ def run(output_queue, serial_queue):
         # for point in points_:
         #     coordinates_list.append([point[0], point[1], point[3]])
         #     depth_list.append(point[2])
-        angle = math.radians(angle)
         # distance += 50
         main()
 
