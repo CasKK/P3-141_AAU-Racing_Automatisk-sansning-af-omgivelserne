@@ -186,9 +186,9 @@ def main():
 
 def run(output_queue, serial_queue):
  
-    #while True: ##########################
+    while True: ##########################
     
-    for frame in range(200):
+    #for frame in range(200):
         global coordinates_listB, coordinates_listY, depth_listB, depth_listY, angle, distance #
         wheel_circumference = 577.6 # in mm
         pulses_per_revolution = 100

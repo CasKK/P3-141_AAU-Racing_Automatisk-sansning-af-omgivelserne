@@ -14,7 +14,7 @@ def run(read_queue, write_queue):
                 try:
                     angle_str, count_str = line.split(',')
                     angle = float(angle_str)
-                    count = int(count_str)
+                    count = float(count_str)
                     read_queue.put((angle, count))
                     print("Angle:", angle, "Count:", count)
                 except ValueError:
