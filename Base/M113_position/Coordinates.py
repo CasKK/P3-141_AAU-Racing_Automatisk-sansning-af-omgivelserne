@@ -138,11 +138,11 @@ coordinates_listY = [[1240,300, 1],
                     [700,666, 1]]
 depth_listB = [500, 1500, 2500, 3500]     # Some 'random' distances for testing purposes as no real test data is available currently.
 depth_listY = [500, 1500, 2500, 3500]
-angle = 0                           # readGyro(z) initial start value
-lastAngle = 0                   # Initial "zero" / start orientation
-distance = 0                        # readEncoder() initial start value
-lastDistance = 0             # Initial "zero" / start encoder value
-car = [0, 1500]                     # Car position (constant, the world moves around the car)
+angle = 0                       # readGyro(z) initial start value
+lastAngle = 0                   # Initial "zero" / start orientation ##########################
+distance = 0                    # readEncoder() initial start value
+lastDistance = 0                # Initial "zero" / start encoder value ###########################
+car = [0, 1500]                 # Car position (constant, the world moves around the car)
 newPointsB = one_frame_cone_positions(coordinates_listB, depth_listB, fov, image_width, image_height) # Initial frame of cones.
 newPointsY = one_frame_cone_positions(coordinates_listY, depth_listY, fov, image_width, image_height) # Initial frame of cones.
 oldPointsB = [[-300,5, 0],[-300,750, 0],[-300,1500, 0]] #,[300,6000],[-300,6000]] # Some initial old points behind the car to ensure correct b-spline.
@@ -159,17 +159,10 @@ def main():
     global lastAngle
     global lastDistance
 
-    # while dataFromM111AndHelios == none: ###### something like this
-    #     wait()
-    # coordinates_list = dataFromM111()                         ###### Input from M111 #########                   
-    # depth_list = getHeliosDistances(coordinates_list)         ###### Input from Helios #######
-
-    # angle = readGyro(z)                                       ###### Input from gyro/magno ##########
     rotatePointsAroundPoint(oldPointsB, car, angle - lastAngle)
     rotatePointsAroundPoint(oldPointsY, car, angle - lastAngle)
     lastAngle = angle
 
-    # distance = readEncoder()                                  ###### Input from encoder ##########
     movePoints1(oldPointsB, oldPointsY, distance - lastDistance)
     lastDistance = distance
 
@@ -183,11 +176,14 @@ def main():
     roundPoints(oldPointsY)
     # print(f"OutFromM113: {oldPoints}")
 
+
 ######### run ###########
 
 def run(input_queue, output_queue, serial_queue): #
+    global coordinates_listB, coordinates_listY, depth_listB, depth_listY, angle, distance
+    main()
     while True: ##########################
-        global coordinates_listB, coordinates_listY, depth_listB, depth_listY, angle, distance
+        
         wheel_circumference = 577.6 # in mm
         pulses_per_revolution = 100
         
@@ -203,6 +199,7 @@ def run(input_queue, output_queue, serial_queue): #
             angle, encoder = serial_queue.get()
             distance = encoder * wheel_circumference / pulses_per_revolution
             print("Angle:", angle, "   distance:", distance)
+            angle = math.radians(angle)
         
         #angle += math.radians(0.1)
         #distance += 100
