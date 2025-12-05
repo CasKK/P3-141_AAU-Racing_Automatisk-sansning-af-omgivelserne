@@ -2,23 +2,30 @@ import serial
 import time
 from multiprocessing import Queue
 
-def serial_manager(read_queue, write_queue):
+def run(read_queue, write_queue):
     ser = serial.Serial('/dev/ttyUSB0', 115200, timeout=0.1)
-    time.sleep(2)  # allow Arduino reset
+    time.sleep(5)  # allow Arduino reset
 
     while True:
         # --- READ ---
-        if ser.in_waiting:
-            try:
-                line = ser.readline().decode('utf-8', errors='ignore').strip()
-                if line:
-                    read_queue.put(line)
-            except:
-                pass
+        line = ser.readline().decode(errors='ignore').strip()
+        if line:
+            if "," in line:
+                try:
+                    angle_str, count_str = line.split(',')
+                    angle = float(angle_str)
+                    count = int(count_str)
+                    read_queue.put((angle, count))
+                    print("Angle:", angle, "Count:", count)
+                except ValueError:
+                    print("Bad line:", line)
+            else:
+                print("skrewed line:", line)
 
         # --- WRITE ---
         while not write_queue.empty():
             message = write_queue.get()
             ser.write((message + '\n').encode('utf-8'))
+            print(f"messageOutToArduino: {message}")
 
         time.sleep(0.001)
