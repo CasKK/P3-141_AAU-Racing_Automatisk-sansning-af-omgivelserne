@@ -205,7 +205,7 @@ def run(input_queue, output_queue, serial_queue): #
         #distance += 100
         main()
         # Enforce max queue length of 5
-        if output_queue.qsize() >= 5:
+        if output_queue.qsize() >= 2:
             try:
                 output_queue.get_nowait()  # remove oldest item
             except:
