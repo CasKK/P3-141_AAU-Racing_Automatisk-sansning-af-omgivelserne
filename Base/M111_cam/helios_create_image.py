@@ -218,24 +218,29 @@ def CreateDevice():
 
 
 def HeliosRunning(device, scale_z, timeout=200):
-    # try:
-    buffer_3d = device.get_buffer(timeout=timeout)
-    # except Exception:
-    #     print(f"{TAB1}Error: Could not get buffer from device")
-    #     return None, None
+    try:
+        buffer_3d = device.get_buffer(timeout=timeout)
+        
+        if buffer_3d is None:
+            print(f"{TAB1}Error: Received empty buffer.")
+            return None, None
+        
+        frame, depthOutput = Buffer_to_BGR8(buffer_3d, scale_z, device)
+        device.requeue_buffer(buffer_3d)
+        #curr_time = time.time()
+        #fps = 1 / (curr_time - prev_time)
+        #prev_time = curr_time
+        #cv2.putText(frame, f"FPS: {fps:.1f}", (10, 50), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
+        #cv2.imshow("3D Heatmap Live", frame)
+        return frame, depthOutput
     
-    if buffer_3d is None:
-         print(f"{TAB1}Error: Received empty buffer.")
-         return None, None
-    
-    frame, depthOutput = Buffer_to_BGR8(buffer_3d, scale_z, device)
-    device.requeue_buffer(buffer_3d)
-    #curr_time = time.time()
-    #fps = 1 / (curr_time - prev_time)
-    #prev_time = curr_time
-    #cv2.putText(frame, f"FPS: {fps:.1f}", (10, 50), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
-    #cv2.imshow("3D Heatmap Live", frame)
-    return frame, depthOutput
+    except Exception:
+        print(f"{TAB1}Error: Could not get buffer from device")
+        return None, None
+        
+
+        
+
 
 def HeliosEnd(device, pixelFormat_initial, operating_mode_initial,  exposure_time_initial, conversion_gain_initial, image_accumulation_initial, spatial_filter_initial, confidence_threshold_initial):     
         # This would timeout or return 1 buffers

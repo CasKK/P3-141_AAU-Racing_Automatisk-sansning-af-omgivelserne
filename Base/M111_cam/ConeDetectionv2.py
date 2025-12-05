@@ -5,11 +5,12 @@ import time
 import subprocess
 import math
 import glob
-from helios_create_image import CreateDevice, HeliosRunning, HeliosEnd, set_nodes
+from helios_create_image import CreateDevice, HeliosRunning, HeliosEnd
 import threading
+from threading import Lock
 kernel = np.ones([5,5], np.uint8)
 latestDistanceFrame = None 
-
+latestDistanceFrameLock = Lock()
 
 
 camera_lock = threading.Lock()
@@ -236,7 +237,7 @@ def EdgeDetection(HSV):
         # cv2.CHAIN_APPROX_SIMPLE: compress contourpoints along side a line to save memmory
     edgeContours, _ = cv2.findContours(combine, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
 
-    return combine, edgeContours, cleanedMask
+    return v, combine, edgeContours, cleanedMask
 
 def CompareWithHelios(contours, frame, depth):    
     newContours = []
@@ -372,9 +373,12 @@ def main():
                     heatmap, depth = HeliosRunning(device, scale_z)
                     if heatmap is None:
                         continue
-                    latestDistanceFrame = (heatmap, depth)
+                    with latestDistanceFrameLock:
+                        latestDistanceFrame = (heatmap, depth)
         except Exception as e:
             print(f"Fejl i HeliosThread: {e}")
+            #device ,scale_z, pixelFormat_initial, operating_mode_initial,  exposure_time_initial, conversion_gain_initial, image_accumulation_initial, spatial_filter_initial, confidence_threshold_initial = CreateDevice()
+
 
 
     
@@ -399,7 +403,7 @@ def main():
         if latestDistanceFrame is None:
              print("Vent på data fra Helios")
         else:
-             heatmap, depth = latestDistanceFrame
+             _, depth = latestDistanceFrame
              cv2.imshow("Helios depthmap", depth)
 
         # Get the masks created in Masking()
@@ -414,7 +418,7 @@ def main():
 
         # Checks if it has found any Blue and Yellow BBoxes, before trying to draw them
         
-        combine, edgeContours, cleanedMask = EdgeDetection(HSV)
+        v, combine, edgeContours, cleanedMask = EdgeDetection(HSV)
 
         # cv2.drawContours drawing all contours (-1) in red, (BGR: 0,0,255) with thickness 3
         frameEdges = frame.copy()
@@ -427,28 +431,42 @@ def main():
         bboxBlue, bboxYellow, _, _ = MergeBbox(bboxesBlueVerified , bboxesYellowVerified)
 
         #draw the varified boxes and edges
-        for boxb in bboxBlue:
-            DrawBoundingBox(boxb, frameEdges, "Blue")
-        for boxy in bboxYellow:
-            DrawBoundingBox(boxy, frameEdges, "Yellow")
-        for boxb in bboxesBlueVerified:
-            cv2.putText(frameEdges, "Edge-verified", (int(boxb[1]), int(boxb[2]-20)),
-                        cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255,0,0), 1)
-        for boxy in bboxesYellowVerified:
-            cv2.putText(frameEdges, "Edge-verified", (int(boxy[1]), int(boxy[2]-20)), 
-                        cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0,255,255), 1)
+        # for boxb in bboxBlue:
+        #     DrawBoundingBox(boxb, frameEdges, "Blue")
+        # for boxy in bboxYellow:
+        #     DrawBoundingBox(boxy, frameEdges, "Yellow")
+        # for boxb in bboxesBlueVerified:
+        #     cv2.putText(frameEdges, "Edge-verified", (int(boxb[1]), int(boxb[2]-20)),
+        #                 cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255,0,0), 1)
+        # for boxy in bboxesYellowVerified:
+        #     cv2.putText(frameEdges, "Edge-verified", (int(boxy[1]), int(boxy[2]-20)), 
+        #                 cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0,255,255), 1)
          
 
         #cv2.imshow("frame", frame)
         cv2.imshow("frame Edges", frameEdges)
+        cv2.imshow("V Frame", v)
+        cv2.imshow("maskBlue", maskBlue)
+        cv2.imshow("maskYellow", maskYellow)
+
         #cv2.imshow("Frame with boxes and edges", maskBlue)
         # Show the combined mask and frame with bboxes
         #cv2.imshow("mask", mask)
         # prints FPS
         #print(f"FPS: {fps}")
-        if cv2.waitKey(1) == ord('q'):
+        #if cv2.waitKey(1) == ord('q'):
+            #break
+        key = cv2.waitKey(1) & 0xFF
+        if key == ord('q'):
             break
-    
+        elif key == ord('s'):
+            # Gem billedet som et unikt billede med tid som filnavn
+            timestamp = time.strftime("%Y%m%d_%H%M%S")
+            image_filename = f"captured_image_{timestamp}.jpg"
+            cv2.imwrite(image_filename, maskYellow)
+            print(f"Billede gemt som {image_filename}")
+
+
     stopEvent.set()
     t.join()
 
