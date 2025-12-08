@@ -10,6 +10,7 @@ import serial
 import datetime
 import csv
 import json
+from queue import Empty
 
 # inputVectorsB = [[-368.0, 540.0, 0],
 #                 [-381.0, 2580.0, 0],
@@ -222,12 +223,13 @@ def run(input_queue, serial_queue):
         writer = csv.writer(f)
         while True:
 
-            try:   
+            try:
                 inputVectorsBTurn, inputVectorsYTurn = input_queue.get_nowait()
                 print(f"M121Points: {inputVectorsBTurn} --- {inputVectorsYTurn} --- {time.time()}")
                 main()
-            except input_queue.empty():
+            except Empty:
                 pass
+
 
             steer_deg = np.degrees(steer_now)
             steer_deg = np.clip(steer_deg, -90, 90)
@@ -236,8 +238,8 @@ def run(input_queue, serial_queue):
                     serial_queue.get_nowait()  # remove oldest item
                 except:
                     pass
-
-            serial_queue.put(bytes(int[steer_deg + 90]))         # Convert to single byte
+            steer_deg = steer_deg + 90
+            serial_queue.put(int(steer_deg))         # Convert to single byte
             print(f"steer_deg: {steer_deg}")
 
             #Log

@@ -198,12 +198,12 @@ def run(input_queue, output_queue, serial_queue): #
             coordinates_listB, coordinates_listY = input_queue.get()
             depth_listB = [p[2] for p in coordinates_listB]
             depth_listY = [p[2] for p in coordinates_listY]
-            
+
             while not serial_queue.empty():
                 angle, encoder = serial_queue.get()
                 distance = encoder * wheel_circumference / pulses_per_revolution
                 print("Angle:", angle, "   distance:", distance)
-                angle = math.radians(angle)
+                # angle = math.radians(angle)
             
             main()
             # Enforce max queue length of 5
@@ -220,7 +220,7 @@ def run(input_queue, output_queue, serial_queue): #
             writer.writerow([timestamp, oldPointsB, oldPointsY])
             f.flush()
 
-            print(f"OutFromM113nr2: {oldPointsB} --- {oldPointsY} --- {time.time()}")
+            #print(f"OutFromM113nr2: {oldPointsB} --- {oldPointsY} --- {time.time()}")
             # plt.pause(0.01)
 
 

@@ -38,7 +38,8 @@ def run(read_queue, write_queue):
             # --- WRITE ---
             while not write_queue.empty():
                 message = write_queue.get()
-                ser.write((message + '\n').encode('utf-8'))
                 print(f"messageOutToArduino: {message}")
+                message = bytes([message])
+                ser.write(message)
 
             time.sleep(0.001)
