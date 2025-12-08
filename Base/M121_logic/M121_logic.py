@@ -173,7 +173,7 @@ def main():
 
 ############### some run stuff ###############
 
-def run(input_queue, serial_queue): #
+def run(input_queue, serial_queue):
     time.sleep(5.5)
     global inputVectorsBTurn, inputVectorsYTurn
     main()
@@ -182,10 +182,16 @@ def run(input_queue, serial_queue): #
     fig.set_size_inches(8, 8)
     plt.xlim(-3000, 3000)
     plt.ylim(-500, 6000)
-    bx = [p[0] for p in inputVectorsBTurn]
-    by = [p[1] for p in inputVectorsBTurn]
-    yx = [p[0] for p in inputVectorsYTurn]
-    yy = [p[1] for p in inputVectorsYTurn]
+    if len(inputVectorsBTurn) == 0 or len(inputVectorsYTurn) == 0:
+        bx = [-100, 100]
+        by = [100, 100]
+        yx = [-100, 100]
+        yy = [200, 200]
+    else: 
+        bx = [p[0] for p in inputVectorsBTurn]
+        by = [p[1] for p in inputVectorsBTurn]
+        yx = [p[0] for p in inputVectorsYTurn]
+        yy = [p[1] for p in inputVectorsYTurn]
     cx = [p[0] for p in centers]
     cy = [p[1] for p in centers]
 
@@ -242,7 +248,7 @@ def run(input_queue, serial_queue): #
             # print(f"inputVectorsBTurn: {inputVectorsBTurn}")
             # print(f"inputVectorsYTurn: {inputVectorsYTurn}")
             
-            if len(inputVectorsBTurn) == 0:
+            if len(inputVectorsBTurn) == 0 or len(inputVectorsYTurn) == 0:
                 bx = [-100, 100]
                 by = [100, 100]
                 yx = [-100, 100]
