@@ -7,6 +7,9 @@ import math
 import glob
 from .helios_create_image import CreateDevice, HeliosRunning, HeliosEnd
 import threading
+import json
+import datetime
+import csv
 kernel = np.ones([5,5], np.uint8)
 debug = False
 
@@ -435,76 +438,82 @@ def run(output_queue):
     # Time is used to calculate FPS. (might not be necesarry to calculate for each frame, might be enough to display once a second)
     
     prev_time = time.time()
+    with open("m111log", "a", newline="") as f:
+        writer = csv.writer(f)
+
+        while True:
+            ret, frame = cap.read() # Get the frame from the camera
+            current_time = time.time() #more fps
+            fps = 1 / (current_time - prev_time)
+            prev_time = current_time
+            if not ret: # If there are is no camera
+                print("Can't read camera, ending stream")
+                break
+            if latestDistanceFrame is None:
+                print("Vent på data fra Helios")
+            else:
+                heatmap, depth = latestDistanceFrame
+                cv2.imshow("Helios Heatmap", depth)
+
+            # Get the masks created in Masking()
+            HSV, maskBlue, maskYellow = Masking(frame, blueUpper, blueLower, yellowUpper, yellowLower)
+            # uses the masks in found Contours to find the locations of objects
+            bboxesBlue, bboxesYellow = FindContours(maskBlue, maskYellow)
+
+            #set_nodes(device.nodemap)
+            
+            # bbBlue = CompareWithHelios(bboxesBlue, frame, depth)
+            # bbYellow = CompareWithHelios(bboxesYellow, frame, depth)
+
+            # Checks if it has found any Blue and Yellow BBoxes, before trying to draw them
+            
+            combine, edgeContours, cleanedMask = EdgeDetection(HSV)
+
+            # cv2.drawContours drawing all contours (-1) in red, (BGR: 0,0,255) with thickness 3
+            frameEdges = frame.copy()
+            if debug == True:
+                cv2.drawContours(frameEdges, edgeContours, -1, (0, 0, 255), 3)
+
+            #verifying edge-detection
+            bboxesBlueVerified = VerifyConesWithEdges(bboxesBlue, combine, 0.1)
+            bboxesYellowVerified = VerifyConesWithEdges(bboxesYellow, combine, 0.3)
+
+            bboxBlue, bboxYellow, _, _, centerPointsBlue, centerPointsYellow = MergeBbox(bboxesBlueVerified , bboxesYellowVerified)
+
+            positions = DistToCenter(centerPointsBlue, centerPointsYellow, depth)
+            print(f"ConePos: {positions}")
 
 
-    while True:
-        ret, frame = cap.read() # Get the frame from the camera
-        current_time = time.time() #more fps
-        fps = 1 / (current_time - prev_time)
-        prev_time = current_time
-        if not ret: # If there are is no camera
-            print("Can't read camera, ending stream")
-            break
-        if latestDistanceFrame is None:
-             print("Vent på data fra Helios")
-        else:
-             heatmap, depth = latestDistanceFrame
-             cv2.imshow("Helios Heatmap", depth)
+            output_queue.put(positions)
 
-        # Get the masks created in Masking()
-        HSV, maskBlue, maskYellow = Masking(frame, blueUpper, blueLower, yellowUpper, yellowLower)
-        # uses the masks in found Contours to find the locations of objects
-        bboxesBlue, bboxesYellow = FindContours(maskBlue, maskYellow)
+            #Log
+            timestamp = datetime.datetime.now("%Y-%m-%d %H:%M:%S.%f")
+            writer.writerow([timestamp, json.dumps(positions)])
+            f.flush()
 
-        #set_nodes(device.nodemap)
-        
-        # bbBlue = CompareWithHelios(bboxesBlue, frame, depth)
-        # bbYellow = CompareWithHelios(bboxesYellow, frame, depth)
+            #draw the varified boxes and edges
+            for boxb in bboxBlue:
+                DrawBoundingBox(boxb, frameEdges, "Blue")
+            for boxy in bboxYellow:
+                DrawBoundingBox(boxy, frameEdges, "Yellow")
+            for boxb in bboxesBlueVerified:
+                cv2.putText(frameEdges, "Edge-verified", (int(boxb[1]), int(boxb[2]-20)),
+                            cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255,0,0), 1)
+            for boxy in bboxesYellowVerified:
+                cv2.putText(frameEdges, "Edge-verified", (int(boxy[1]), int(boxy[2]-20)), 
+                            cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0,255,255), 1)
+            
 
-        # Checks if it has found any Blue and Yellow BBoxes, before trying to draw them
-        
-        combine, edgeContours, cleanedMask = EdgeDetection(HSV)
+            #cv2.imshow("frame", frame)
+            cv2.imshow("frame Edges", frameEdges)
 
-        # cv2.drawContours drawing all contours (-1) in red, (BGR: 0,0,255) with thickness 3
-        frameEdges = frame.copy()
-        if debug == True:
-            cv2.drawContours(frameEdges, edgeContours, -1, (0, 0, 255), 3)
-
-        #verifying edge-detection
-        bboxesBlueVerified = VerifyConesWithEdges(bboxesBlue, combine, 0.1)
-        bboxesYellowVerified = VerifyConesWithEdges(bboxesYellow, combine, 0.3)
-
-        bboxBlue, bboxYellow, _, _, centerPointsBlue, centerPointsYellow = MergeBbox(bboxesBlueVerified , bboxesYellowVerified)
-
-        positions = DistToCenter(centerPointsBlue, centerPointsYellow, depth)
-        print(f"ConePos: {positions}")
-
-
-        output_queue.put(positions)
-
-        #draw the varified boxes and edges
-        for boxb in bboxBlue:
-            DrawBoundingBox(boxb, frameEdges, "Blue")
-        for boxy in bboxYellow:
-            DrawBoundingBox(boxy, frameEdges, "Yellow")
-        for boxb in bboxesBlueVerified:
-            cv2.putText(frameEdges, "Edge-verified", (int(boxb[1]), int(boxb[2]-20)),
-                        cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255,0,0), 1)
-        for boxy in bboxesYellowVerified:
-            cv2.putText(frameEdges, "Edge-verified", (int(boxy[1]), int(boxy[2]-20)), 
-                        cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0,255,255), 1)
-         
-
-        #cv2.imshow("frame", frame)
-        cv2.imshow("frame Edges", frameEdges)
-
-        #cv2.imshow("Frame with boxes and edges", maskBlue)
-        # Show the combined mask and frame with bboxes
-        #cv2.imshow("mask", mask)
-        # prints FPS
-        # print(f"FPS: {fps}")
-        if cv2.waitKey(1) == ord('q'):
-            break
+            #cv2.imshow("Frame with boxes and edges", maskBlue)
+            # Show the combined mask and frame with bboxes
+            #cv2.imshow("mask", mask)
+            # prints FPS
+            # print(f"FPS: {fps}")
+            if cv2.waitKey(1) == ord('q'):
+                break
     
     stopEvent.set()
     t.join()

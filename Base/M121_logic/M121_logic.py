@@ -7,6 +7,9 @@ from matplotlib.patches import FancyArrowPatch
 import plotly.express as px
 from scipy.interpolate import splprep, splev
 import serial
+import datetime
+import csv
+import json
 
 # inputVectorsB = [[-368.0, 540.0, 0],
 #                 [-381.0, 2580.0, 0],
@@ -209,63 +212,68 @@ def run(input_queue, serial_queue): #
     
     plt.show(block=False)
     plt.pause(0.01)
+    with open("m121log", "a", newline="") as f:
+        writer = csv.writer(f)
+        while True:
 
-    while True:
-
-        try:   
-            inputVectorsBTurn, inputVectorsYTurn = input_queue.get_nowait()
-            print(f"M121Points: {inputVectorsBTurn} --- {inputVectorsYTurn} --- {time.time()}")
-            main()
-        except input_queue.empty():
-            pass
-
-        steer_deg = np.degrees(steer_now)
-        steer_deg = np.clip(steer_deg, -90, 90)
-        if serial_queue.qsize() >= 5:
-            try:
-                serial_queue.get_nowait()  # remove oldest item
-            except:
+            try:   
+                inputVectorsBTurn, inputVectorsYTurn = input_queue.get_nowait()
+                print(f"M121Points: {inputVectorsBTurn} --- {inputVectorsYTurn} --- {time.time()}")
+                main()
+            except input_queue.empty():
                 pass
 
-        serial_queue.put(bytes(int[steer_deg + 90]))         # Convert to single byte
-        print(f"steer_deg: {steer_deg}")
+            steer_deg = np.degrees(steer_now)
+            steer_deg = np.clip(steer_deg, -90, 90)
+            if serial_queue.qsize() >= 5:
+                try:
+                    serial_queue.get_nowait()  # remove oldest item
+                except:
+                    pass
 
-        # print(f"Closest_U: {int(closest_u)}")
-        # print(f"inputVectorsBTurn: {inputVectorsBTurn}")
-        # print(f"inputVectorsYTurn: {inputVectorsYTurn}")
-        
-        if len(inputVectorsBTurn) == 0:
-            bx = [-100, 100]
-            by = [100, 100]
-            yx = [-100, 100]
-            yy = [200, 200]
-        else: 
-            bx = [p[0] for p in inputVectorsBTurn]
-            by = [p[1] for p in inputVectorsBTurn]
-            yx = [p[0] for p in inputVectorsYTurn]
-            yy = [p[1] for p in inputVectorsYTurn]
-        cx = [p[0] for p in centers]
-        cy = [p[1] for p in centers]
+            serial_queue.put(bytes(int[steer_deg + 90]))         # Convert to single byte
+            print(f"steer_deg: {steer_deg}")
 
-        tx, ty = dx_u[int(closest_u)], dy_u[int(closest_u)]
-        t_norm = np.hypot(tx, ty)
-        tx /= t_norm
-        ty /= t_norm
-        delta = steering[int(closest_u)]
-        wx =  np.cos(delta)*tx - np.sin(delta)*ty
-        wy =  np.sin(delta)*tx + np.cos(delta)*ty
-        arrow_scale = 400
+            #Log
+            timestamp = datetime.datetime.now("%Y-%m-%d %H:%M:%S.%f")
+            writer.writerow([timestamp, steer_deg])
+            f.flush()
+            # print(f"Closest_U: {int(closest_u)}")
+            # print(f"inputVectorsBTurn: {inputVectorsBTurn}")
+            # print(f"inputVectorsYTurn: {inputVectorsYTurn}")
+            
+            if len(inputVectorsBTurn) == 0:
+                bx = [-100, 100]
+                by = [100, 100]
+                yx = [-100, 100]
+                yy = [200, 200]
+            else: 
+                bx = [p[0] for p in inputVectorsBTurn]
+                by = [p[1] for p in inputVectorsBTurn]
+                yx = [p[0] for p in inputVectorsYTurn]
+                yy = [p[1] for p in inputVectorsYTurn]
+            cx = [p[0] for p in centers]
+            cy = [p[1] for p in centers]
 
-        start = (x_smooth[int(closest_u)], y_smooth[int(closest_u)])
-        end = (start[0] + wx * arrow_scale, start[1] + wy * arrow_scale)
+            tx, ty = dx_u[int(closest_u)], dy_u[int(closest_u)]
+            t_norm = np.hypot(tx, ty)
+            tx /= t_norm
+            ty /= t_norm
+            delta = steering[int(closest_u)]
+            wx =  np.cos(delta)*tx - np.sin(delta)*ty
+            wy =  np.sin(delta)*tx + np.cos(delta)*ty
+            arrow_scale = 400
 
-        arrow.set_positions(start, end)
+            start = (x_smooth[int(closest_u)], y_smooth[int(closest_u)])
+            end = (start[0] + wx * arrow_scale, start[1] + wy * arrow_scale)
 
-        yscatter.set_offsets(list(zip(yx, yy)))
-        bscatter.set_offsets(list(zip(bx, by)))
-        cscatter.set_offsets(list(zip(cx, cy)))
-        line.set_data(x_smooth, y_smooth)
-        plt.pause(0.001)
+            arrow.set_positions(start, end)
+
+            yscatter.set_offsets(list(zip(yx, yy)))
+            bscatter.set_offsets(list(zip(bx, by)))
+            cscatter.set_offsets(list(zip(cx, cy)))
+            line.set_data(x_smooth, y_smooth)
+            plt.pause(0.001)
 
 time_end = time.time() # stop time
 print(f"Runtime: {time_end - time_start:.5f} seconds")

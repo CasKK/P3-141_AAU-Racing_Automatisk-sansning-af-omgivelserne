@@ -300,11 +300,11 @@ def ShapeClassification(bayerValues, bbox):
         probBottom = pBottom / total
         probMix = 0
 
-        if probTop > 0.5 and probTop > probBottom and probMix > probBottom:
+        if probTop > 0.5 and probTop > probBottom and probTop > probMix:
             classified.append((c, x, y, w, h, d, 0))
         if probBottom > 0.5 and probBottom > probTop and probBottom > probMix:
             classified.append((c, x, y, w, h, d, 1))
-        if probMix > 0.5 and probMix < probBottom and probTop < probBottom:
+        if probMix > 0.5 and probMix > probTop and probMix > probBottom:
             classified.append((c, x, y, w, h, d, 2))
 
     return classified

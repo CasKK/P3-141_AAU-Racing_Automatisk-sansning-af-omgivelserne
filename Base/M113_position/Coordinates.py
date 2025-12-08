@@ -5,7 +5,9 @@ import matplotlib.pyplot as plt
 import math
 import time
 import serial
-
+import csv
+import datetime
+import json
 
 # Following Code Will, use an input image coordinate and depth to generate xy vector to a cone for a Driverless Vehicle
 
@@ -182,39 +184,48 @@ def main():
 def run(input_queue, output_queue, serial_queue): #
     global coordinates_listB, coordinates_listY, depth_listB, depth_listY, angle, distance
     main()
-    while True: ##########################
-        
-        wheel_circumference = 577.6 # in mm
-        pulses_per_revolution = 100
-        
-        depth_listB = []
-        depth_listY = []
-        coordinates_listB, coordinates_listY = input_queue.get()
-        for i, point in enumerate(coordinates_listB):
-            depth_listB[i] = point[2]
-        for i, point in enumerate(coordinates_listY):
-            depth_listY[i] = point[2]
 
-        while not serial_queue.empty():
-            angle, encoder = serial_queue.get()
-            distance = encoder * wheel_circumference / pulses_per_revolution
-            print("Angle:", angle, "   distance:", distance)
-            angle = math.radians(angle)
-        
-        #angle += math.radians(0.1)
-        #distance += 100
-        main()
-        # Enforce max queue length of 5
-        if output_queue.qsize() >= 5:
-            try:
-                output_queue.get_nowait()  # remove oldest item
-            except:
-                pass
+    with open("m113log", "a", newline="") as f:
+        writer = csv.writer(f)
 
-        output_queue.put((oldPointsB, oldPointsY))
+        while True: ##########################
+            
+            wheel_circumference = 577.6 # in mm
+            pulses_per_revolution = 100
+            
+            depth_listB = []
+            depth_listY = []
+            coordinates_listB, coordinates_listY = input_queue.get()
+            for i, point in enumerate(coordinates_listB):
+                depth_listB[i] = point[2]
+            for i, point in enumerate(coordinates_listY):
+                depth_listY[i] = point[2]
 
-        print(f"OutFromM113nr2: {oldPointsB} --- {oldPointsY} --- {time.time()}")
-        # plt.pause(0.01)
+            while not serial_queue.empty():
+                angle, encoder = serial_queue.get()
+                distance = encoder * wheel_circumference / pulses_per_revolution
+                print("Angle:", angle, "   distance:", distance)
+                angle = math.radians(angle)
+            
+            #angle += math.radians(0.1)
+            #distance += 100
+            main()
+            # Enforce max queue length of 5
+            if output_queue.qsize() >= 5:
+                try:
+                    output_queue.get_nowait()  # remove oldest item
+                except:
+                    pass
+
+            output_queue.put((oldPointsB, oldPointsY))
+
+            #Log
+            timestamp = datetime.datetime.now("%Y-%m-%d %H:%M:%S.%f")
+            writer.writerow([timestamp, json.dumps(oldPointsB), json.dumps(oldPointsY)])
+            f.flush()
+
+            print(f"OutFromM113nr2: {oldPointsB} --- {oldPointsY} --- {time.time()}")
+            # plt.pause(0.01)
 
 
 
