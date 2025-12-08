@@ -4,7 +4,8 @@ import plotly.graph_objects as go
 import matplotlib.pyplot as plt
 import math
 import time
-
+import csv
+import json
 
 
 # Following Code Will, use an input image coordinate and depth to generate xy vector to a cone for a Driverless Vehicle
@@ -186,38 +187,50 @@ def main():
 
 def run(output_queue, serial_queue):
  
-    while True: ##########################
-    
-    #for frame in range(200):
-        global coordinates_listB, coordinates_listY, depth_listB, depth_listY, angle, distance #
-        wheel_circumference = 577.6 # in mm
-        pulses_per_revolution = 100
+    with open("m113log", "a", newline="") as f:
+        writer = csv.writer(f)
+        while True: ##########################
         
-        # points_ = input_queue.get()
-        # coordinates_list = []
-        # depth_list = []
-        # for point in points_:
-        #     coordinates_list.append([point[0], point[1], point[3]])
-        #     depth_list.append(point[2])
-        # distance += 50
+            global coordinates_listB, coordinates_listY, depth_listB, depth_listY, angle, distance #
+            wheel_circumference = 577.6 # in mm
+            pulses_per_revolution = 100
+            
+            # depth_listB = []
+            # depth_listY = []
+            # coordinates_listB, coordinates_listY = input_queue.get()
+            # for i, point in enumerate(coordinates_listB):
+            #     depth_listB[i] = point[2]
+            # for i, point in enumerate(coordinates_listY):
+            #     depth_listY[i] = point[2]
+            # distance += 50
 
-        while not serial_queue.empty():
-            angle, encoder = serial_queue.get()
-            distance = encoder * wheel_circumference / pulses_per_revolution
-            print("Angle:", angle, "   distance:", distance) 
-            angle = math.radians(angle)
+            while not serial_queue.empty():
+                angle, encoder = serial_queue.get()
+                distance = encoder * wheel_circumference / pulses_per_revolution
+                print("Angle:", angle, "   distance:", distance) 
+                angle = math.radians(angle)
 
-        main()
+            main()
+            if output_queue.qsize() >= 5:
+                try:
+                    output_queue.get_nowait()  # remove oldest item
+                except:
+                    pass
 
-        coordinates_listB = []
-        coordinates_listY = []
-        depth_listB = []
-        depth_listY = []
+            coordinates_listB = []
+            coordinates_listY = []
+            depth_listB = []
+            depth_listY = []
 
-        output_queue.put((oldPointsB, oldPointsY))
-        # print(f"OutFromM113: {oldPoints} {time.time()}")
-        plt.pause(0.2)
+            output_queue.put((oldPointsB, oldPointsY))
 
+            #Log
+            timestamp = time.time()
+            writer.writerow([timestamp, json.dumps(oldPointsB), json.dumps(oldPointsY)])
+            f.flush()
+
+            print(f"OutFromM113nr2: {oldPointsB} --- {oldPointsY} --- {time.time()}")
+            time.sleep(0.002)
 
 
 

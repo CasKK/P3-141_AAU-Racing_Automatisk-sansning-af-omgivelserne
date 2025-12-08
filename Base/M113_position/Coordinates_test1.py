@@ -4,10 +4,8 @@ import plotly.graph_objects as go
 import matplotlib.pyplot as plt
 import math
 import time
-import serial
-import csv
-import datetime
-import json
+
+
 
 # Following Code Will, use an input image coordinate and depth to generate xy vector to a cone for a Driverless Vehicle
 
@@ -88,7 +86,7 @@ def matchPoints(points, oldPoints, maxDist = 200*200):######################## C
     #         rotatePointAroundPoint(oldPoint, car, currentAngle)
     #         movePoint(oldPoint, distance)
     #         updated.add(i)
-
+    
     # print(pointList)
 
 def rotatePointsAroundPoint(points, car, angle):
@@ -140,18 +138,17 @@ coordinates_listY = [[1240,300, 1],
                     [700,666, 1]]
 depth_listB = [500, 1500, 2500, 3500]     # Some 'random' distances for testing purposes as no real test data is available currently.
 depth_listY = [500, 1500, 2500, 3500]
-angle = 0                       # readGyro(z) initial start value
-lastAngle = 0                   # Initial "zero" / start orientation ##########################
-distance = 0                    # readEncoder() initial start value
-lastDistance = 0                # Initial "zero" / start encoder value ###########################
-car = [0, 1500]                 # Car position (constant, the world moves around the car)
+angle = 0                           # readGyro(z) initial start value
+lastAngle = 0                   # Initial "zero" / start orientation
+distance = 0                        # readEncoder() initial start value
+lastDistance = 0             # Initial "zero" / start encoder value
+car = [0, 1500]                     # Car position (constant, the world moves around the car)
 newPointsB = one_frame_cone_positions(coordinates_listB, depth_listB, fov, image_width, image_height) # Initial frame of cones.
 newPointsY = one_frame_cone_positions(coordinates_listY, depth_listY, fov, image_width, image_height) # Initial frame of cones.
 oldPointsB = [[-300,5, 0],[-300,750, 0],[-300,1500, 0]] #,[300,6000],[-300,6000]] # Some initial old points behind the car to ensure correct b-spline.
 oldPointsY = [[300,1, 1],[300,755, 1],[300,1505, 1]] #,[300,6000],[-300,6000]] # Some initial old points behind the car to ensure correct b-spline.
 matchPoints(newPointsB, oldPointsB)
 matchPoints(newPointsY, oldPointsY)
-
 
 ################ Program (loop) ##############
 """When new data is ready, the predicted cone locations are calculated (based on encoder and gyro/magno). 
@@ -161,10 +158,17 @@ def main():
     global lastAngle
     global lastDistance
 
+    # while dataFromM111AndHelios == none: ###### something like this
+    #     wait()
+    # coordinates_list = dataFromM111()                         ###### Input from M111 #########                   
+    # depth_list = getHeliosDistances(coordinates_list)         ###### Input from Helios #######
+
+    # angle = readGyro(z)                                       ###### Input from gyro/magno ##########
     rotatePointsAroundPoint(oldPointsB, car, angle - lastAngle)
     rotatePointsAroundPoint(oldPointsY, car, angle - lastAngle)
     lastAngle = angle
 
+    # distance = readEncoder()                                  ###### Input from encoder ##########
     movePoints1(oldPointsB, oldPointsY, distance - lastDistance)
     lastDistance = distance
 
@@ -178,50 +182,41 @@ def main():
     roundPoints(oldPointsY)
     # print(f"OutFromM113: {oldPoints}")
 
-
 ######### run ###########
 
-def run(input_queue, output_queue, serial_queue): #
-    global coordinates_listB, coordinates_listY, depth_listB, depth_listY, angle, distance
-    main()
+def run(output_queue, serial_queue):
+ 
+    while True: ##########################
+    
+    #for frame in range(200):
+        global coordinates_listB, coordinates_listY, depth_listB, depth_listY, angle, distance #
+        wheel_circumference = 577.6 # in mm
+        pulses_per_revolution = 100
+        
+        # points_ = input_queue.get()
+        # coordinates_list = []
+        # depth_list = []
+        # for point in points_:
+        #     coordinates_list.append([point[0], point[1], point[3]])
+        #     depth_list.append(point[2])
+        # distance += 50
 
-    with open("m113log", "a", newline="") as f:
-        writer = csv.writer(f)
+        while not serial_queue.empty():
+            angle, encoder = serial_queue.get()
+            distance = encoder * wheel_circumference / pulses_per_revolution
+            print("Angle:", angle, "   distance:", distance) 
+            angle = math.radians(angle)
 
-        while True: ##########################
-            
-            wheel_circumference = 577.6 # in mm
-            pulses_per_revolution = 100
-            
-            depth_listB = []
-            depth_listY = []
-            coordinates_listB, coordinates_listY = input_queue.get()
-            depth_listB = [p[2] for p in coordinates_listB]
-            depth_listY = [p[2] for p in coordinates_listY]
-            
-            while not serial_queue.empty():
-                angle, encoder = serial_queue.get()
-                distance = encoder * wheel_circumference / pulses_per_revolution
-                print("Angle:", angle, "   distance:", distance)
-                angle = math.radians(angle)
-            
-            main()
-            # Enforce max queue length of 5
-            if output_queue.qsize() >= 5:
-                try:
-                    output_queue.get_nowait()  # remove oldest item
-                except:
-                    pass
+        main()
 
-            output_queue.put((oldPointsB, oldPointsY))
+        coordinates_listB = []
+        coordinates_listY = []
+        depth_listB = []
+        depth_listY = []
 
-            #Log
-            timestamp = time.time()
-            writer.writerow([timestamp, oldPointsB, oldPointsY])
-            f.flush()
-
-            print(f"OutFromM113nr2: {oldPointsB} --- {oldPointsY} --- {time.time()}")
-            # plt.pause(0.01)
+        output_queue.put((oldPointsB, oldPointsY))
+        # print(f"OutFromM113: {oldPoints} {time.time()}")
+        plt.pause(0.2)
 
 
 
