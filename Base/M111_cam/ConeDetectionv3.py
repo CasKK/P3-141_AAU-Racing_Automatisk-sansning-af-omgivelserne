@@ -110,7 +110,7 @@ def FindContours(maskBlue, maskYellow):
 
                 # Check if the area is to small
                 area = cv2.contourArea(c)
-                if not area > 500:   # Er arealet mindre end 100 pixel
+                if not area > 400:   # Er arealet mindre end 200 pixel
                     return False
                 
                 # Check solidity
@@ -238,9 +238,11 @@ def EdgeDetection(HSV):
 
     return combine, edgeContours, cleanedMask
 
-def CompareWithHelios(contours, frame, depth):    
+def CompareWithHelios(contours, frame, depth): 
+
     newContours = []
     
+    # For-loop to go through all contours in a list to
     for contour in contours:
         c, x, y, w, h, d = contour
         mask = np.zeros_like(frame[:, :, 0])

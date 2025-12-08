@@ -67,8 +67,8 @@ def Setup():
 
     upperLimitBlue = np.array([123, 252, 150], np.uint8)
     lowerLimitBlue = np.array([103, 92, 5], np.uint8)
-    upperLimitYellow = np.array([33,255,230], np.uint8)
-    lowerLimitYellow = np.array([13,120,70], np.uint8)
+    upperLimitYellow = np.array([35,255,255], np.uint8)
+    lowerLimitYellow = np.array([13,100,30], np.uint8)
     return cam, upperLimitBlue, lowerLimitBlue, upperLimitYellow, lowerLimitYellow
 
 
@@ -462,8 +462,8 @@ def main():
         elif key == ord('s'):
             # Gem billedet som et unikt billede med tid som filnavn
             timestamp = time.strftime("%Y%m%d_%H%M%S")
-            image_filename = f"captured_image_{timestamp}.jpg"
-            cv2.imwrite(image_filename, maskYellow)
+            image_filename = f"captured_imageB_{timestamp}.jpg"
+            cv2.imwrite(image_filename, maskBlue)
             print(f"Billede gemt som {image_filename}")
 
 

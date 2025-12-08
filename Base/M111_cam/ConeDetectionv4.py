@@ -5,7 +5,7 @@ import time
 import subprocess
 import math
 import glob
-from helios_create_image import CreateDevice, HeliosRunning, HeliosEnd
+from .helios_create_image import CreateDevice, HeliosRunning, HeliosEnd
 import threading
 kernel = np.ones([5,5], np.uint8)
 debug = False
@@ -70,7 +70,15 @@ def Setup():
     lowerLimitYellow = np.array([13,120,70], np.uint8)
     return cam, upperLimitBlue, lowerLimitBlue, upperLimitYellow, lowerLimitYellow
 
-
+def load_model(filename="bayerValues.txt"):
+    model = {}
+    with open(filename, "r") as f:
+        for line in f:
+            parts = line.strip().split()
+            key = parts[0]
+            values = [float(v) for v in parts[1:]]
+            model[key] = values
+    return model
 
 # The masking function is where all the preprocessing and masking is performed
 # A gaussian blur is added to remove noise and smooth the frame
@@ -146,10 +154,14 @@ def FindContours(maskBlue, maskYellow):
                 if not (w_bbox > 10 and h_bbox > 10):
                     return False
                 
+                # Covexity defects
+                defects = cv2.convexityDefect(c, hull)
+                numDefects = defects.shape[0] if defects is not None else 0
+
                 # Calculate a diagonal
                 d = math.sqrt(h_minArea**2 + w_minArea**2)
 
-                return (c, x, y, w_bbox, h_bbox, d)#[c]
+                return (c, x, y, w_bbox, h_bbox, d, (solidity, circularity, aspect, compactness, numDefects))#[c]
             
             valid = CheckFeatures(c)
             if valid != False:
@@ -238,26 +250,96 @@ def EdgeDetection(HSV):
 
     return combine, edgeContours, cleanedMask
 
-def CompareWithHelios(contours, frame, depth):    
-    newContours = []
+def VerifyConesWithEdges(bboxes, edges, threshold):
+    verified = [] #Listing for the bboxes, that is being verified as valid 
     
+    _, edgesBin = cv2.threshold(edges, 1, 255, cv2.THRESH_BINARY)
+
+    for box in bboxes:
+        #Converting bounding box coordinates to a integer
+        c, _, _, _, _, _, _ = box
+
+        maskEdge = np.zeros_like(edgesBin)
+        cv2.drawContours(maskEdge, [c], -1, (255), 4)
+        
+        overlap = cv2.bitwise_and(maskEdge, edgesBin)
+
+        edgePixels = cv2.countNonZero(maskEdge)
+        overlapPixels = cv2.countNonZero(overlap)
+
+        if edgePixels > 0 and (overlapPixels / edgePixels >= threshold):
+            verified.append(box)
+
+    return verified
+
+def ShapeClassification(bayerValues, bbox):
+
+    def gaussianLogProb(x, mu, var):
+        return -0.5*math.log(2*math.pi*var) - ((x-mu)**2)/(2*var)
+
+    def classLogScore(x, mu, var, prior):
+        log_probs = [gaussianLogProb(xi, mui, vari) for xi, mui, vari in zip(x, mu, var)]
+        return sum(log_probs) + math.log(prior)
+    
+    classified = []
+
+    for b in bbox:
+        c, x, y, w, h, d, features = b
+
+        priorTop = 0.5
+        priorBottom = 0.5
+
+        logTop = classLogScore(features, bayerValues["topMean"], bayerValues["topVar"], priorTop)
+        logBottom = classLogScore(features, bayerValues["bottomMean"], bayerValues["bottomVar"], priorBottom)
+
+
+        pTop = math.exp(logTop)
+        pBottom = math.exp(logBottom)
+        total = pTop + pBottom
+        probTop = pTop / total
+        probBottom = pBottom / total
+        probMix = 0
+
+        if probTop > 0.5 and probTop > probBottom and probMix > probBottom:
+            classified.append((c, x, y, w, h, d, 0))
+        if probBottom > 0.5 and probBottom > probTop and probBottom > probMix:
+            classified.append((c, x, y, w, h, d, 1))
+        if probMix > 0.5 and probMix < probBottom and probTop < probBottom:
+            classified.append((c, x, y, w, h, d, 2))
+
+    return classified
+
+
+def CompareWithHelios(contours, frame, depth):   
+    '''
+    Function to check if a BLOB is seperated by distance and therefore should be to different objekts.
+    '''
+
+    newContours = []
+
+    # For-loop to go through all contours in a list to
     for contour in contours:
         c, x, y, w, h, d = contour
       
-
+        # Makes a mask that from the current contour     
         mask = np.zeros_like(frame[:, :, 0])
-
         cv2.drawContours(mask, [c], -1, 255, thickness=cv2.FILLED)
 
+        # Making a threshold relative to the size of the BLOB
         threshold = np.count_nonzero(mask)*0.04
         
+        # Use the mask of the on the depthmap to isolate the area, using median filter to remove noise, flattening it to a 1D-list
+        # with only every 3 pixel. Then sorting it
         depthValues = depth[mask==255]
+        depthValues = cv2.medianBlur(depthValues, 5)
         depthValues = depthValues.flatten()[::3]
         depthValues.sort()
 
         peaks = []
         currentPeak = []
 
+        # For-loop that goes through the list and make an nev list if the value between to elements is higher than 150.
+        # Each new current list is a peak, and will be appended to the peak list if there is a minimum of pixel in it
         for i, value in enumerate(depthValues):
             if i == 0:
                 currentPeak.append(int(value)) 
@@ -270,9 +352,12 @@ def CompareWithHelios(contours, frame, depth):
                     currentPeak = []
                     currentPeak.append(int(value))
 
+        # If there is only one peak, then it is its own BLOB, the mean depth value will be calculated and the original contour is appended to newContours
         if len(peaks)==1:
             mean = int( sum(peaks[0]) / len(peaks[0]) )
             newContours.append((x, y, w, h, d, mean))
+
+        # If there are more it will finde new contour for each peak.
         elif len(peaks) > 1:
             for p in peaks:
                 mean = int( sum(p) / len(p) )
@@ -292,28 +377,6 @@ def CompareWithHelios(contours, frame, depth):
         print(f"Peaks: {len(peaks)}")
     return newContours  
 
-def VerifyConesWithEdges(bboxes, edges, threshold):
-    verified = [] #Listing for the bboxes, that is being verified as valid 
-    
-    _, edgesBin = cv2.threshold(edges, 1, 255, cv2.THRESH_BINARY)
-
-    for box in bboxes:
-        #Converting bounding box coordinates to a integer
-        c, _, _, _, _, _ = box
-
-        maskEdge = np.zeros_like(edgesBin)
-        cv2.drawContours(maskEdge, [c], -1, (255), 4)
-        
-        overlap = cv2.bitwise_and(maskEdge, edgesBin)
-
-        edgePixels = cv2.countNonZero(maskEdge)
-        overlapPixels = cv2.countNonZero(overlap)
-
-        if edgePixels > 0 and (overlapPixels / edgePixels >= threshold):
-            verified.append(box)
-
-    return verified
-
 # The MergeBbox function is used to merge the base and top parts of the cones
 # It has two helper functions CenterCalc(), where it calculates the centers of each bbox and its it to a list.
 # MergeCenters then filters through these centers and checks if two centers are within the predefined pixel distance
@@ -321,16 +384,16 @@ def VerifyConesWithEdges(bboxes, edges, threshold):
 def MergeBbox(bboxBlue, bboxYellow):
     def CenterCalc(bbox, centrum):
         for b in bbox:
-            x,y,w,h,diameter,depth = b
+            _,x,y,w,h,d,_ = b
             cx = x+w/2
             cy = y+h/2
-            centrum.append((cx, cy, w, h, x, y, diameter, depth))
+            centrum.append((cx,cy, w, h,x,y,d))
     def MergeCenters(centrum, merged, mergedCorner, mergedCenter):
         for c in centrum: # go through each item in the list of center locations
             found = False # Found is false at the start since the first center is not close to any of the others since there is none to compare to
             for i, m in enumerate(merged): # For each iteration i, and m in enumerate(merged) i is the iteration and m is the corresponding entry in merged
-                if (abs(c[1]-m[1]) < c[6]*2) and (abs(c[0]-m[0]) < c[6]*0.5) and (abs(c[7]-m[4]) < 500): # Checks to see if the center c is close enough to the entry m
-                    merged[i] = ((c[0]+m[0])/2, (c[1]+m[1])/2, abs(c[1]-m[1])*1.5, abs(c[0]-m[0])*3, abs((c[7]+m[4])/2)) # If it is close enough a new center is calculated 
+                if (abs(c[1]-m[1]) < c[6]*2) and (abs(c[0]-m[0]) < c[6]*0.5): # Checks to see if the center c is close enough to the entry m
+                    merged[i] = ((c[0]+m[0])/2, (c[1]+m[1])/2, abs(c[1]-m[1])*1.5, abs(c[0]-m[0])*3) # If it is close enough a new center is calculated 
                     x1 = min(c[0]-c[2]/2, m[0]-m[2]/2) # The minimum and maximum values for the new center is created
                     y1 = min(c[1]-c[3]/2, m[1]-m[3]/2)
                     x2 = max(c[0]+c[2]/2, m[0]+m[2]/2)
@@ -341,12 +404,12 @@ def MergeBbox(bboxBlue, bboxYellow):
                     found = True # set found to true
                     break # go out of the for loop so the next center will be assed 
             if not found: # If found != True it just adds the original positions
-                merged.append((c[0],c[1],c[2],c[3],c[7])) #This is the center position
+                merged.append((c[0],c[1],c[2],c[3])) #This is the center position
                 mergedCorner.append((c[4],c[5],c[2],c[3])) #This is for the upper corner and correct bbox creation
                 
                 cx = c[4]+c[2]/2
                 cy = c[5]+c[3]/2
-                mergedCenter.append((cx,cy,c[7]))
+                mergedCenter.append((cx,cy))
 
     centrumB, centrumY,  mergedBlue, mergedYellow, mergedBlueCorner, mergedYellowCorner, mergedCenterBlue, mergedCenterYellow = [], [], [], [], [], [], [], []
     CenterCalc(bboxBlue, centrumB)
@@ -377,47 +440,29 @@ def DrawBoundingBox(box, frame, color):
     cv2.putText(frame, label, (p1[0], p1[1]-5), cv2.FONT_HERSHEY_COMPLEX, 0.7, frameColor, 2, cv2.LINE_AA)
 
 def DistToCenter (conesBlue, conesYellow, depth):
-    xyzToCones = []
+    blueArray, yellowArray, combinedArray = [], [], []
     
-    for cone in conesBlue:
-        x, y = cone
-        x, y = int(x), int(y) 
-        z = depth[y,x]
-        z = int(z)
-        xyzToCones.append((x, y, z, 0))
+    def CalcZ(cones, array, combined):
+        for cone in cones:
+            x, y = cone
+            x, y = int(x), int(y) 
+            z = depth[y,x]
+            z = int(z)
+            array.append((x, y, z))
+        combined.append(array)
 
-    for cone in conesYellow:
-        x, y = cone
-        x, y = int(x), int(y) 
-        z = depth[y,x]
-        z = int(z)
-        xyzToCones.append((x, y, z, 1))
-    
-    return xyzToCones
-
-def CombineBlueAndYellow(conesBlue, conesYellow):
-    
-    combinedArray = []
-    
-    for cone in conesBlue:
-        x, y, z = cone
-        x, y, z = int(x), int(y), int(z) 
-
-        combinedArray.append((x, y, z, 0))
-
-    for cone in conesYellow:
-        x, y, z = cone
-        x, y, z = int(x), int(y), int(z) 
-        combinedArray.append((x, y, z, 1))
+    CalcZ(conesBlue, blueArray, combinedArray)
+    CalcZ(conesYellow, yellowArray, combinedArray)
     
     return combinedArray
+
 
 
 latestDistanceFrame = None
 
 # This is where everything comes together 
-# def run(output_queue):
-def main():
+def run(output_queue):
+#def main():
     stopEvent = threading.Event()
     device ,scale_z, pixelFormat_initial, operating_mode_initial,  exposure_time_initial, conversion_gain_initial, image_accumulation_initial, spatial_filter_initial, confidence_threshold_initial = CreateDevice()
 
@@ -444,6 +489,7 @@ def main():
     
     prev_time = time.time()
 
+    bayerValues = load_model("model.txt")
 
     while True:
         ret, frame = cap.read() # Get the frame from the camera
@@ -464,8 +510,6 @@ def main():
         # uses the masks in found Contours to find the locations of objects
         bboxesBlue, bboxesYellow = FindContours(maskBlue, maskYellow)
 
-        
-
         #set_nodes(device.nodemap)
         
         # bbBlue = CompareWithHelios(bboxesBlue, frame, depth)
@@ -484,22 +528,16 @@ def main():
         bboxesBlueVerified = VerifyConesWithEdges(bboxesBlue, combine, 0.1)
         bboxesYellowVerified = VerifyConesWithEdges(bboxesYellow, combine, 0.3)
 
-        #print(bboxesYellowVerified)
+        bboxesBlueClassified = ShapeClassification(bayerValues, bboxesBlueVerified)
+        bboxesYellowClassified = ShapeClassification(bayerValues, bboxesYellowVerified)
 
-        bboxesBlueDepthCompare = CompareWithHelios(bboxesBlue, frame, depth)
-        bboxesYellowDepthCompare = CompareWithHelios(bboxesYellow, frame, depth)
+        bboxBlue, bboxYellow, _, _, centerPointsBlue, centerPointsYellow = MergeBbox(bboxesBlueClassified , bboxesYellowClassified)
 
-        #print(bboxesYellowDepthCompare)
-
-        bboxBlue, bboxYellow, _, _, centerPointsBlue, centerPointsYellow = MergeBbox(bboxesBlueDepthCompare , bboxesYellowDepthCompare)
-
-        #print(centerPointsYellow)
-
-        positions = CombineBlueAndYellow(centerPointsBlue, centerPointsYellow)# DistToCenter(centerPointsBlue, centerPointsYellow, depth)
+        positions = DistToCenter(centerPointsBlue, centerPointsYellow, depth)
         print(f"ConePos: {positions}")
 
 
-        # output_queue.put(positions)
+        output_queue.put(positions)
 
         #draw the varified boxes and edges
         for boxb in bboxBlue:
@@ -516,11 +554,12 @@ def main():
 
         #cv2.imshow("frame", frame)
         cv2.imshow("frame Edges", frameEdges)
+
         #cv2.imshow("Frame with boxes and edges", maskBlue)
         # Show the combined mask and frame with bboxes
         #cv2.imshow("mask", mask)
         # prints FPS
-        print(f"FPS: {fps}")
+        # print(f"FPS: {fps}")
         if cv2.waitKey(1) == ord('q'):
             break
     
@@ -537,6 +576,6 @@ def main():
     except Exception as e:
         print("Fejl under HeliosEnd", e)
 
-if __name__ == "__main__":
-    main()
+# if __name__ == "__main__":
+#     main()
     

@@ -3,7 +3,7 @@ import time
 from multiprocessing import Queue
 
 def run(read_queue, write_queue):
-    ser = serial.Serial('/dev/ttyUSB0', 115200, timeout=0.1)
+    ser = serial.Serial('/dev/ttyACM0', 115200, timeout=0.1)
     time.sleep(5)  # allow Arduino reset
 
     while True:
@@ -15,7 +15,7 @@ def run(read_queue, write_queue):
                     angle_str, count_str = line.split(',')
                     angle = float(angle_str) 
                     count = float(count_str)
-                    if read_queue.qsize() >= 2:
+                    if read_queue.qsize() >= 5:
                         try:
                             read_queue.get_nowait()  # remove oldest item
                         except:

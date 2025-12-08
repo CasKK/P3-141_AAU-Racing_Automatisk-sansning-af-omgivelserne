@@ -171,6 +171,7 @@ def main():
 ############### some run stuff ###############
 
 def run(input_queue, serial_queue): #
+    time.sleep(5.5)
     global inputVectorsBTurn, inputVectorsYTurn
     main()
     plt.ion()
@@ -206,24 +207,28 @@ def run(input_queue, serial_queue): #
     
     ax.set_aspect('equal')
     
+    plt.show(block=False)
+    plt.pause(0.01)
+
     while True:
-           
-        inputVectorsBTurn, inputVectorsYTurn = input_queue.get()
-        print(f"M121Points: {inputVectorsBTurn} --- {inputVectorsYTurn} --- {time.time()}")
 
-        main()
-
+        try:   
+            inputVectorsBTurn, inputVectorsYTurn = input_queue.get_nowait()
+            print(f"M121Points: {inputVectorsBTurn} --- {inputVectorsYTurn} --- {time.time()}")
+            main()
+        except input_queue.empty():
+            pass
 
         steer_deg = np.degrees(steer_now)
         steer_deg = np.clip(steer_deg, -90, 90)
-        if serial_queue.qsize() >= 2:
+        if serial_queue.qsize() >= 5:
             try:
                 serial_queue.get_nowait()  # remove oldest item
             except:
                 pass
 
-        serial_queue.put(bytes([steer_deg + 90]))         # Convert to single byte
-
+        serial_queue.put(bytes(int[steer_deg + 90]))         # Convert to single byte
+        print(f"steer_deg: {steer_deg}")
 
         # print(f"Closest_U: {int(closest_u)}")
         # print(f"inputVectorsBTurn: {inputVectorsBTurn}")
