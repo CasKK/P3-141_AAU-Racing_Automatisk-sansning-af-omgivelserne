@@ -207,8 +207,6 @@ def run(input_queue, output_queue, serial_queue): #
                 print("Angle:", angle, "   distance:", distance)
                 angle = math.radians(angle)
             
-            #angle += math.radians(0.1)
-            #distance += 100
             main()
             # Enforce max queue length of 5
             if output_queue.qsize() >= 5:
