@@ -196,11 +196,9 @@ def run(input_queue, output_queue, serial_queue): #
             depth_listB = []
             depth_listY = []
             coordinates_listB, coordinates_listY = input_queue.get()
-            for i, point in enumerate(coordinates_listB):
-                depth_listB[i] = point[2]
-            for i, point in enumerate(coordinates_listY):
-                depth_listY[i] = point[2]
-
+            depth_listB = [p[2] for p in coordinates_listB]
+            depth_listY = [p[2] for p in coordinates_listY]
+            
             while not serial_queue.empty():
                 angle, encoder = serial_queue.get()
                 distance = encoder * wheel_circumference / pulses_per_revolution
@@ -221,7 +219,7 @@ def run(input_queue, output_queue, serial_queue): #
 
             #Log
             timestamp = time.time()
-            writer.writerow([timestamp, json.dumps(oldPointsB), json.dumps(oldPointsY)])
+            writer.writerow([timestamp, oldPointsB, oldPointsY])
             f.flush()
 
             print(f"OutFromM113nr2: {oldPointsB} --- {oldPointsY} --- {time.time()}")
