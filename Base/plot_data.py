@@ -2,7 +2,7 @@ import csv
 import json
 import matplotlib.pyplot as plt
 
-fil = "m113log"
+fil = "m113log2"
 
 frames = []
 
@@ -46,5 +46,5 @@ for frame in frames:
     bscatter.set_offsets(list(zip(bx, by)))
     yscatter.set_offsets(list(zip(yx, yy)))
 
-    plt.pause(0.02)
+    plt.pause(0.002)
 

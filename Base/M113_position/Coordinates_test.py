@@ -230,7 +230,7 @@ def run(output_queue, serial_queue):
             f.flush()
 
             print(f"OutFromM113nr2: {oldPointsB} --- {oldPointsY} --- {time.time()}")
-            plt.pause(0.2)
+            time.sleep(0.002)
 
 
 

@@ -1,43 +1,44 @@
 import serial
 import time
 from multiprocessing import Queue
+import csv
+import json
+import datetime
+
 
 def run(read_queue, write_queue):
     ser = serial.Serial('com5', 115200, timeout=0.1)
-    time.sleep(2)  # allow Arduino reset
+    time.sleep(5)  # allow Arduino reset
+    with open("seriallog", "a", newline="") as f:
+        writer = csv.writer(f)
+        while True:
+            # --- READ ---
+            line = ser.readline().decode(errors='ignore').strip()
+            if line:
+                if "," in line:
+                    try:
+                        angle_str, count_str = line.split(',')
+                        angle = float(angle_str) 
+                        count = float(count_str)
+                        if read_queue.qsize() >= 5:
+                            try:
+                                read_queue.get_nowait()  # remove oldest item
+                            except:
+                                pass
+                        read_queue.put((angle, count))
+                        print("Angle:", angle, "Count:", count)
+                        timestamp = time.time()
+                        writer.writerow([timestamp, angle, count])
+                        f.flush()
+                    except ValueError:
+                        print("Bad line:", line)
+                else:
+                    print("skrewed line:", line)
 
-    
-    lastTime = 0
-    encoderCounts = 0
-    degrees = 0
+            # --- WRITE ---
+            while not write_queue.empty():
+                message = write_queue.get()
+                # ser.write((message + '\n').encode('utf-8'))
+                print(f"messageOutToArduino: {message}")
 
-    while True:
-        # --- READ ---
-        line = ser.readline().decode(errors='ignore').strip()
-        if line:
-            if "," in line:
-                try:
-                    angle_str, count_str = line.split(',')
-                    angle = float(angle_str)
-                    count = float(count_str)
-                    count = int(count)
-                    read_queue.put((angle, count))
-                    #print("Angle:", angle, "Count:", count)
-                except ValueError:
-                    print("Bad line:", line)
-            else:
-                print("skrewed line:", line)
-        
-        # if lastTime + 0.01 < time.time():
-        #     read_queue.put((degrees, encoderCounts))
-        #     degrees += 0.1
-        #     encoderCounts += 10
-        #     lastTime = time.time()
-
-        # --- WRITE ---
-        while not write_queue.empty():
-            message = write_queue.get()
-            #ser.write((message + '\n').encode('utf-8'))
-            print(f"messageOutToArduino: {message}")
-
-        time.sleep(0.001)
+            time.sleep(0.001)
