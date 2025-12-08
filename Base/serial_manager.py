@@ -27,7 +27,7 @@ def run(read_queue, write_queue):
                                 pass
                         read_queue.put((angle, count))
                         print("Angle:", angle, "Count:", count)
-                        timestamp = datetime.datetime.now("%Y-%m-%d %H:%M:%S.%f")
+                        timestamp = time.time()
                         writer.writerow([timestamp, angle, count])
                         f.flush()
                     except ValueError:

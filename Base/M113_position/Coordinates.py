@@ -220,7 +220,7 @@ def run(input_queue, output_queue, serial_queue): #
             output_queue.put((oldPointsB, oldPointsY))
 
             #Log
-            timestamp = datetime.datetime.now("%Y-%m-%d %H:%M:%S.%f")
+            timestamp = time.time()
             writer.writerow([timestamp, json.dumps(oldPointsB), json.dumps(oldPointsY)])
             f.flush()
 

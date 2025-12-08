@@ -235,7 +235,7 @@ def run(input_queue, serial_queue): #
             print(f"steer_deg: {steer_deg}")
 
             #Log
-            timestamp = datetime.datetime.now("%Y-%m-%d %H:%M:%S.%f")
+            timestamp = time.time()
             writer.writerow([timestamp, steer_deg])
             f.flush()
             # print(f"Closest_U: {int(closest_u)}")

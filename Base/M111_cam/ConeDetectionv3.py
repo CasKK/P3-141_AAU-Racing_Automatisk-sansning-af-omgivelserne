@@ -487,7 +487,7 @@ def run(output_queue):
             output_queue.put(positions)
 
             #Log
-            timestamp = datetime.datetime.now("%Y-%m-%d %H:%M:%S.%f")
+            timestamp = time.time()
             writer.writerow([timestamp, json.dumps(positions)])
             f.flush()
 
