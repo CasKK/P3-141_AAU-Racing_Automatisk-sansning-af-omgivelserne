@@ -1,0 +1,27 @@
+=== classTop ===
+Kolonne 1:  min = 0.791102,   max = 0.991561
+Kolonne 2:  min = 1.059909,   max = 1.392305
+Kolonne 3:  min = 1.052632,   max = 1.817308
+Kolonne 4:  min = 0.572363,   max = 0.911111
+Kolonne 5:  min = 1.000000,   max = 18.000000
+
+=== classBottom ===
+Kolonne 1:  min = 0.780173,   max = 0.985373
+Kolonne 2:  min = 1.090441,   max = 1.685609
+Kolonne 3:  min = 1.053535,   max = 1.554153
+Kolonne 4:  min = 0.620943,   max = 0.909091
+Kolonne 5:  min = 4.000000,   max = 19.000000
+
+=== classMix1 ===
+Kolonne 1:  min = 0.719686,   max = 0.857039
+Kolonne 2:  min = 1.400132,   max = 1.979676
+Kolonne 3:  min = 1.360255,   max = 1.695187
+Kolonne 4:  min = 0.568721,   max = 0.648596
+Kolonne 5:  min = 8.000000,   max = 16.000000
+
+=== classMix2 ===
+Kolonne 1:  min = 0.752556,   max = 0.866956
+Kolonne 2:  min = 1.288536,   max = 1.468791
+Kolonne 3:  min = 1.785714,   max = 1.833333
+Kolonne 4:  min = 0.565110,   max = 0.677057
+Kolonne 5:  min = 9.000000,   max = 14.000000
