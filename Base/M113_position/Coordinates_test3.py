@@ -74,7 +74,7 @@ def matchPoints(points, oldPoints, maxDist = 200*200):######################## C
             pointList.append([dist, i, j, dist1])
     pointList = sorted(pointList, key=lambda x: x[0])# np.array( 
 
-    used_i = set()
+    used_i = set() # set that keeps track of unmatched cones 
 
     #Update positions of matched points that dont exceed distance threshold
     for dist, i, j, dist1 in pointList: # Match points
@@ -99,39 +99,38 @@ def matchPoints(points, oldPoints, maxDist = 200*200):######################## C
     #         updated.add(len(oldPoints)-1)
 
     
-   # Only add to oldPoints after CONFIRM_FRAMES consecutive matches
 
-    # Candidate buffer for this tracked list (Blue/Yellow separated by id(oldPoints))
+    #Buffer of candidates
     cands = _PENDING.get(id(oldPoints), [])
 
-    # 1) Detections NOT consumed by tracked matching
+    # A list of points that were not matched in the previous section.
     unmatched = [points[i] for i in range(len(points)) if i not in used_i]
 
-    # 2) Associate unmatched detections to existing candidates (greedy by distance)
+    # Compare and match detections to previous candidates.
     pairs = []
-    for ui, d in enumerate(unmatched):
-        for cj, c in enumerate(cands):
-            # Optional type check (B/Y calls already keep types separate)
-            if len(d) >= 3 and c.get("type") is not None and c["type"] != d[2]:
-                continue
-            dist2 = (d[0] - c["x"])**2 + (d[1] - c["y"])**2
-            pairs.append((dist2, ui, cj))
-    pairs.sort(key=lambda x: x[0])
+    for i, unmatched_point in enumerate(unmatched): # Loops through all unmatched points this frame
+        for j, candidates in enumerate(cands): #Loops through all potential candidates last frame
+            dist2 = (unmatched_point[0] - candidates["x"])**2 + (unmatched_point[1] - candidates["y"])**2   #Calculates distance
+            pairs.append((dist2, i, j)) #appends distance and, the counter variables i and j
+    pairs.sort(key=lambda x: x[0]) #Sorts everything
 
-    used_ui = set()
-    matched_c_idxs = set()
-    for dist2, ui, cj in pairs:
-        if dist2 > maxDist:
+
+    # creates two lists of ids for the used unmatched points. ie those that got matched, and a list of ids for the candidates that got matched.
+    used_unmatched_points = set() 
+    matched_candidates_ids = set()
+
+    for dist2, i, j in pairs: # Loop through all of the pairs
+        if dist2 > maxDist: # if the distance is greater than max distance, dont match the point
             break
-        if ui in used_ui:
+        if i in used_unmatched_points: 
             continue
         # Update candidate with current detection
-        cands[cj]["x"] = unmatched[ui][0]
-        cands[cj]["y"] = unmatched[ui][1]
-        cands[cj]["hit"] = cands[cj].get("hit", 0) + 1
-        cands[cj]["miss"] = 0
-        used_ui.add(ui)
-        matched_c_idxs.add(cj)
+        cands[j]["x"] = unmatched[i][0]
+        cands[j]["y"] = unmatched[i][1]
+        cands[j]["hit"] = cands[j].get("hit", 0) + 1
+        cands[j]["miss"] = 0
+        used_unmatched_points.add(i)
+        matched_candidates_ids.add(j)
 
     # 3) Candidates not matched this frame → miss++
     for idx, c in enumerate(cands):
@@ -226,11 +225,12 @@ image_width = 640
 image_height = 480
 
 
-# Candidate buffers keyed per tracked list (Blue/Yellow separated by id(oldPoints))
+# Buffer for candidates
 _PENDING = {}               # id(oldPoints) -> list of {'x','y','type','hit','miss'}
+# ['x'] = [0]
 
-CONFIRM_FRAMES = 2         # require 3 consecutive matches to start tracking (set to 2 if you prefer)
-CANDIDATE_MISS_MAX = 2      # drop a candidate if it disappears for 2 frames
+CONFIRM_FRAMES = 2         # consecutive matches threshold
+CANDIDATE_MISS_MAX = 2      # drop a candidate if it disappears for more than 
 
 
 
