@@ -7,9 +7,6 @@ import math
 import glob
 from .helios_create_image import CreateDevice, HeliosRunning, HeliosEnd
 import threading
-import json
-import datetime
-import csv
 kernel = np.ones([5,5], np.uint8)
 debug = False
 
@@ -71,9 +68,33 @@ def Setup():
     lowerLimitBlue = np.array([103, 92, 5], np.uint8)
     upperLimitYellow = np.array([33,255,230], np.uint8)
     lowerLimitYellow = np.array([13,120,70], np.uint8)
-    return cam, upperLimitBlue, lowerLimitBlue, upperLimitYellow, lowerLimitYellow
+
+    bayesValues = {
+        "topMean": [0.9644363764088177, 1.1378143182985014, 1.3961731590237239, 0.8197422981794419, 6.8076923076923075],
+        "topVar": [0.0012718660489877433, 0.004174815174160363, 0.03272987798648929, 0.0059563763778370015, 19.693786982248522],
+        "bottomMean": [0.9415715247980834, 1.1681854816697144, 1.2863062514179588, 0.811978889557676, 8.96],
+        "bottomVar": [0.0017130435723415446, 0.009287333475935779, 0.021151436488789154, 0.005764079511957598, 15.7184],
+        "mix1Mean": [0.9644363764088177, 1.1378143182985014, 1.3961731590237239, 0.8197422981794419, 6.8076923076923075],
+        "mix1Var": [0.0012718660489877433, 0.004174815174160363, 0.03272987798648929, 0.0059563763778370015, 19.693786982248522],
+        "mix2Mean": [0.9644363764088177, 1.1378143182985014, 1.3961731590237239, 0.8197422981794419, 6.8076923076923075],
+        "mix2Var": [0.0012718660489877433, 0.004174815174160363, 0.03272987798648929, 0.0059563763778370015, 19.693786982248522]
+    }
+    
+    return cam, upperLimitBlue, lowerLimitBlue, upperLimitYellow, lowerLimitYellow, bayesValues
 
 
+
+def loadBayes(filename="bayerValues.txt"):
+    model = {}
+    
+
+    with open(filename, "r") as f:
+        for line in f:
+            parts = line.strip().split()
+            key = parts[0]
+            values = [float(v) for v in parts[1:]]
+            model[key] = values
+    return model
 
 # The masking function is where all the preprocessing and masking is performed
 # A gaussian blur is added to remove noise and smooth the frame
@@ -113,20 +134,20 @@ def FindContours(maskBlue, maskYellow):
 
                 # Check if the area is to small
                 area = cv2.contourArea(c)
-                if not area > 400:   # Er arealet mindre end 200 pixel
+                if not 100 < area < 15000:
                     return False
                 
                 # Check solidity
                 hull = cv2.convexHull(c)
                 hull_area = cv2.contourArea(hull)
                 solidity = area / hull_area if hull_area != 0 else 0
-                if not solidity > 0.8:
+                if not 0.7 <solidity < 1:
                     return False
 
                 # Check circularity
                 perimeter = cv2.arcLength(c, True)
                 circularity = perimeter/(2*math.sqrt(math.pi*area))
-                if not (1 < circularity < 50):
+                if not (1 < circularity < 2):
                     return False
 
                 # Check aspect
@@ -136,12 +157,12 @@ def FindContours(maskBlue, maskYellow):
                     aspect = h_minArea / w_minArea if w_minArea != 0 else 0
                 else:
                     aspect = w_minArea / h_minArea if h_minArea != 0 else 0
-                if not (0.7 < aspect < 3):
+                if not (1 < aspect < 1.9):
                     return False
 
                 # Check compactness
                 compactness = area / (h_minArea*w_minArea) if (h_minArea*w_minArea) != 0 else 0
-                if not (0.3 < compactness < 0.9):
+                if not (0.5 < compactness < 0.95):
                     return False
 
                 # Check if the bbox is to small
@@ -149,10 +170,17 @@ def FindContours(maskBlue, maskYellow):
                 if not (w_bbox > 10 and h_bbox > 10):
                     return False
                 
+                # Covexity defects
+                hullC = cv2.convexHull(c, returnPoints=False)
+                defects = cv2.convexityDefects(c, hullC)
+                numDefects = defects.shape[0] if defects is not None else 0
+                if not (1 < numDefects < 20):
+                    return False
+
                 # Calculate a diagonal
                 d = math.sqrt(h_minArea**2 + w_minArea**2)
 
-                return (c, x, y, w_bbox, h_bbox, d)#[c]
+                return (c, x, y, w_bbox, h_bbox, d, (solidity, circularity, aspect, compactness, numDefects))#[c]
             
             valid = CheckFeatures(c)
             if valid != False:
@@ -165,8 +193,6 @@ def FindContours(maskBlue, maskYellow):
     return bboxBlue, bboxYellow
 
 
-
-
 def EdgeDetection(HSV):
 
     def Morphology(combine):
@@ -177,32 +203,7 @@ def EdgeDetection(HSV):
         #Converting the frames to binary pictures, making pixels >20 white and the rest black
         _, binary = cv2.threshold(opening, 20, 255, cv2.THRESH_BINARY)
         
-
         return binary
-    
-    def RemoveSmallObjectsWithContours(binary, min_area=300):
-        #Finding all outer contours in the binary picture 
-        contours, _ = cv2.findContours(binary, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-
-        #Making an empty mask, the same size as the input picture 
-        mask = np.zeros_like(binary)
-
-        #Listing to save the large contours 
-        keptContours = []
-
-        #Gping through every contour 
-        for c in contours:
-            #Calculating the area of the contour 
-            area = cv2.contourArea(c)
-            #Only saving contourer, that is larger than min_area
-            if area >= min_area:
-                keptContours.append(c)
-
-        #Draw all the saved contours as white objekts on the mask
-        if keptContours:
-                cv2.drawContours(mask, keptContours, -1, 255, thickness=cv2.FILLED)
-
-        return mask, keptContours
 
     #splitting hsv pictures 
     v = HSV[:, :, 2]
@@ -227,65 +228,13 @@ def EdgeDetection(HSV):
     #combining sobel and canny edge detection
     combine = cv2.bitwise_or(gradientMagnitude, edges) 
 
-    #Making binary picture with morphology
-    binary = Morphology(combine)
-
-    # Remove small objects fast with contour filter
-    cleanedMask, keptContours = RemoveSmallObjectsWithContours(binary, min_area=250)
-
     #Finding contours in the binary edge picture and draw a frame 
         # edge_contours: listing with points for every contour
         # cv2.RETR_EXTERNAL: only outer contours, ingoring inner holes 
         # cv2.CHAIN_APPROX_SIMPLE: compress contourpoints along side a line to save memmory
     edgeContours, _ = cv2.findContours(combine, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
 
-    return combine, edgeContours, cleanedMask
-
-def CompareWithHelios(contours, frame, depth): 
-
-    newContours = []
-    
-    # For-loop to go through all contours in a list to
-    for contour in contours:
-        c, x, y, w, h, d = contour
-        mask = np.zeros_like(frame[:, :, 0])
-        if debug == True:
-            cv2.drawContours(mask, [c], -1, 255, -1)
-        hist = cv2.calcHist([depth],[0],mask,[6000],[0,6001])
-
-        peaks = []
-        countSum, countNumber, countRange = 0, 0, 0
-
-        for i, count in enumerate(hist):            
-            
-            minDist, maxDist = 0, 0
-
-            if (20 < count < 100):
-                if countNumber > 0:
-                    mean = countSum/countNumber
-                    expan = 50
-                    minDist = i - countRange - expan
-                    maxDist = -1 + expan
-                    peaks.append((mean, minDist, maxDist))
-                    countSum, countNumber, countRange = 0, 0, 0
-            else:
-                countSum += i * count
-                countNumber += count
-                countRange += 1
-
-        if len(peaks) == 1:
-            mean, _, _ = peaks[0]
-            newContours.append((c, x, y, w, h, d, mean))  # Append original contour and its mean
-        # elif len(peaks) > 1:
-        #     for p in peaks:
-        #         mean, minDist, maxDist = p
-        #         depthMask = cv2.inRange(depth, minDist, maxDist)
-        #         combinedMask = cv2.bitwise_and(depthMask, mask)
-        #         cNew, _ = cv2.findContours(combinedMask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-        #         xNew, yNew, wNew, hNew = cv2.boundingRect(cNew[0])
-        #         newContours.append((cNew[0], xNew, yNew, wNew, hNew, mean))
-
-    return newContours  
+    return combine, edgeContours
 
 def VerifyConesWithEdges(bboxes, edges, threshold):
     verified = [] #Listing for the bboxes, that is being verified as valid 
@@ -294,7 +243,7 @@ def VerifyConesWithEdges(bboxes, edges, threshold):
 
     for box in bboxes:
         #Converting bounding box coordinates to a integer
-        c, _, _, _, _, _ = box
+        c, _, _, _, _, _, _ = box
 
         maskEdge = np.zeros_like(edgesBin)
         cv2.drawContours(maskEdge, [c], -1, (255), 4)
@@ -309,23 +258,161 @@ def VerifyConesWithEdges(bboxes, edges, threshold):
 
     return verified
 
+def ShapeClassification(bayesValues, bbox):
+
+    def gaussianLogProb(x, mu, var):
+        return -0.5*math.log(2*math.pi*var) - ((x-mu)**2)/(2*var)
+
+    def classLogScore(x, mu, var, prior):
+        log_probs = [gaussianLogProb(xi, mui, vari) for xi, mui, vari in zip(x, mu, var)]
+        return sum(log_probs) + math.log(prior)
+    
+    classified = []
+
+    for b in bbox:
+        c, x, y, w, h, d, features = b
+
+        priorTop = 0.4
+        priorBottom = 0.4
+        priorMix1 = 0.05
+        priorMix2 = 0.1
+
+        logTop = classLogScore(features, bayesValues["topMean"], bayesValues["topVar"], priorTop)
+        logBottom = classLogScore(features, bayesValues["bottomMean"], bayesValues["bottomVar"], priorBottom)
+        logMix1 = classLogScore(features, bayesValues["mix1Mean"], bayesValues["mix1Var"], priorMix1)
+        logMix2 = classLogScore(features, bayesValues["mix2Mean"], bayesValues["mix2Var"], priorMix2)
+
+        compare = {
+            0: logTop, 1: logBottom, 2: logMix1, 3: logMix2
+        }
+
+        predicted = max(compare, key=compare.get)
+      
+        classified.append((c, x, y, w, h, d, predicted))
+
+    return classified
+
+
+def CompareWithHelios(contours, frame, depth):   
+    '''
+    Function to check if a BLOB is seperated by distance and therefore should be to different objekts.
+    '''
+
+    def Scale(contour, x, y, w, h, scale):
+        cx = x + w / 2
+        cy = y + h / 2
+
+        #   https://nvsabhilash.me/2019/06/29/Scaling-and-Rotating-contours.html?utm_source=chatgpt.com
+        scaledContour = contour.copy().astype(np.float32)
+        scaledContour[:, 0, 0] = cx + (scaledContour[:, 0, 0] - cx) * scale
+        scaledContour[:, 0, 1] = cy + (scaledContour[:, 0, 1] - cy) * scale
+        scaledContour = scaledContour.astype(np.int32)
+
+        return scaledContour, cx, cy
+
+    newContours = []
+    mixCone = []
+
+    depth = cv2.medianBlur(depth, 5)
+
+    # For-loop to go through all contours in a list to
+    for contour in contours:
+        c, x, y, w, h, d, t = contour
+        
+        if t == 0 or t == 1 or t ==2:
+
+            scaledContour, cx, cy = Scale(c, x, y, w, h, 0.75)
+
+            # Lav en maske ud fra den skalerede kontur
+            mask = np.zeros_like(frame[:, :, 0])
+            cv2.drawContours(mask, [scaledContour], -1, 255, thickness=cv2.FILLED)  # fyld konturen
+
+            # Calculates mean of depth
+            mean = cv2.mean(depth, mask=mask)[0]
+
+            if t == 2:
+
+                mixCone.append((cx, cy, mean))
+            else:
+                newContours.append((x, y, w, h, d, mean))
+        
+        if t == 3:
+            scaledContour, _, _ = Scale(c, x, y, w, h, 0.8)
+
+            # Makes a mask that from the current contour     
+            mask = np.zeros_like(frame[:, :, 0])
+            cv2.drawContours(mask, [scaledContour], -1, 255, thickness=cv2.FILLED)
+
+            
+            
+            # Use the mask of the on the depthmap to isolate the area, using median filter to remove noise, flattening it to a 1D-list
+            # with only every 3 pixel. Then sorting it
+            depthValues = depth[mask==255]
+            depthValues = depthValues.flatten()[::3]
+            depthValues.sort()
+
+            peaks = []
+            currentPeak = []
+
+            # Making a threshold relative to the size of the BLOB
+            threshold = np.count_nonzero(mask)*0.1
+
+            # For-loop that goes through the list and make an nev list if the value between to elements is higher than 150.
+            # Each new current list is a peak, and will be appended to the peak list if there is a minimum of pixel in it
+            for i, value in enumerate(depthValues):
+                if i == 0:
+                    currentPeak.append(int(value)) 
+                else:
+                    if (value - depthValues[i-1]) < 150:
+                        currentPeak.append(int(value))
+                    else:
+                        if (len(currentPeak) > threshold):
+                            peaks.append(currentPeak)
+                        currentPeak = []
+                        currentPeak.append(int(value))
+
+            # If there is only one peak, then it is its own BLOB, the mean depth value will be calculated and the original contour is appended to newContours
+            if len(peaks)==1:
+                mean = int( sum(peaks[0]) / len(peaks[0]) )
+                newContours.append((x, y, w, h, d, mean))
+
+            # If there are more it will finde new contour for each peak.
+            elif len(peaks) > 1:
+                for p in peaks:
+                    mean = int( sum(p) / len(p) )
+                    innerMask = cv2.inRange(depth, p[0],p[-1])
+                    innerMask = cv2.morphologyEx(innerMask, cv2.MORPH_OPEN, kernel, iterations=2)
+                    innerMask = cv2.morphologyEx(innerMask, cv2.MORPH_CLOSE, kernel, iterations=2)
+                    combinedMask = cv2.bitwise_and(mask, innerMask)
+                    cNew, _ = cv2.findContours(combinedMask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+                    if len(cNew) > 0:
+                        for c in cNew:
+                            area = cv2.contourArea(c)
+                            if area > threshold:
+                                xNew, yNew, wNew, hNew = cv2.boundingRect(c)
+                                dNew = math.sqrt(hNew**2 + wNew**2)
+                                newContours.append((xNew, yNew, wNew, hNew, dNew, mean))
+
+    return newContours, mixCone  
+
 # The MergeBbox function is used to merge the base and top parts of the cones
 # It has two helper functions CenterCalc(), where it calculates the centers of each bbox and its it to a list.
 # MergeCenters then filters through these centers and checks if two centers are within the predefined pixel distance
 # if they are a new center is calculated as the average of both ccenters, and a new bbox is defined.
+
 def MergeBbox(bboxBlue, bboxYellow):
     def CenterCalc(bbox, centrum):
         for b in bbox:
-            _,x,y,w,h,d = b
+            x,y,w,h,diameter,depth = b
             cx = x+w/2
             cy = y+h/2
-            centrum.append((cx,cy, w, h,x,y,d))
+            centrum.append((cx, cy, w, h, x, y, diameter, depth))
     def MergeCenters(centrum, merged, mergedCorner, mergedCenter):
         for c in centrum: # go through each item in the list of center locations
             found = False # Found is false at the start since the first center is not close to any of the others since there is none to compare to
             for i, m in enumerate(merged): # For each iteration i, and m in enumerate(merged) i is the iteration and m is the corresponding entry in merged
-                if (abs(c[1]-m[1]) < c[6]*2) and (abs(c[0]-m[0]) < c[6]*0.5): # Checks to see if the center c is close enough to the entry m
-                    merged[i] = ((c[0]+m[0])/2, (c[1]+m[1])/2, abs(c[1]-m[1])*1.5, abs(c[0]-m[0])*3) # If it is close enough a new center is calculated 
+                if (abs(c[1]-m[1]) < c[6]*4) and (abs(c[0]-m[0]) < c[6]*0.5) and (abs(c[7]-m[4]) < 500): # Checks to see if the center c is close enough to the entry m
+                    merged[i] = ((c[0]+m[0])/2, (c[1]+m[1])/2, abs(c[1]-m[1])*1.5, abs(c[0]-m[0])*3, abs((c[7]+m[4])/2)) # If it is close enough a new center is calculated 
                     x1 = min(c[0]-c[2]/2, m[0]-m[2]/2) # The minimum and maximum values for the new center is created
                     y1 = min(c[1]-c[3]/2, m[1]-m[3]/2)
                     x2 = max(c[0]+c[2]/2, m[0]+m[2]/2)
@@ -336,12 +423,12 @@ def MergeBbox(bboxBlue, bboxYellow):
                     found = True # set found to true
                     break # go out of the for loop so the next center will be assed 
             if not found: # If found != True it just adds the original positions
-                merged.append((c[0],c[1],c[2],c[3])) #This is the center position
+                merged.append((c[0],c[1],c[2],c[3],c[7])) #This is the center position
                 mergedCorner.append((c[4],c[5],c[2],c[3])) #This is for the upper corner and correct bbox creation
                 
                 cx = c[4]+c[2]/2
                 cy = c[5]+c[3]/2
-                mergedCenter.append((cx,cy))
+                mergedCenter.append((cx,cy,c[7]))
 
     centrumB, centrumY,  mergedBlue, mergedYellow, mergedBlueCorner, mergedYellowCorner, mergedCenterBlue, mergedCenterYellow = [], [], [], [], [], [], [], []
     CenterCalc(bboxBlue, centrumB)
@@ -371,48 +458,30 @@ def DrawBoundingBox(box, frame, color):
     cv2.rectangle(frame, p1, p2, frameColor, 2, 1)
     cv2.putText(frame, label, (p1[0], p1[1]-5), cv2.FONT_HERSHEY_COMPLEX, 0.7, frameColor, 2, cv2.LINE_AA)
 
-def DistToCenter (conesBlue, conesYellow, depth):
+def DistToCenter (conesBlue1, conesBlue2, conesYellow1, conesYellow2, depth):
     blueArray, yellowArray, combinedArray = [], [], []
     
-    def CalcZ(cones, array, combined):
-        for cone in cones:
-            x, y = cone
-            x, y = int(x), int(y) 
-            z = depth[y,x]
-            z = int(z)
+    def CalcZ(cones1, cones2, array, combined):
+        for cone in cones1:
+            x, y, z = cone
+            x, y, z = int(x), int(y), int(z) 
+            array.append((x, y, z))
+        for cone in cones2:
+            x, y, z = cone
+            x, y, z = int(x), int(y), int(z) 
             array.append((x, y, z))
         combined.append(array)
 
-    CalcZ(conesBlue, blueArray, combinedArray)
-    CalcZ(conesYellow, yellowArray, combinedArray)
+    CalcZ(conesBlue1, conesBlue2, blueArray, combinedArray)
+    CalcZ(conesYellow1, conesYellow2, yellowArray, combinedArray)
     
     return combinedArray
-
-
-def DistToCenterOld (conesBlue, conesYellow, depth):
-    xyzToCones = []
-    
-    for cone in conesBlue:
-        x, y = cone
-        x, y = int(x), int(y) 
-        z = depth[y,x]
-        z = int(z)
-        xyzToCones.append((x, y, z, 0))
-
-    for cone in conesYellow:
-        x, y = cone
-        x, y = int(x), int(y) 
-        z = depth[y,x]
-        z = int(z)
-        xyzToCones.append((x, y, z, 1))
-    
-    return xyzToCones
 
 latestDistanceFrame = None
 
 # This is where everything comes together 
 def run(output_queue):
-#def main():
+# def main():
     stopEvent = threading.Event()
     device ,scale_z, pixelFormat_initial, operating_mode_initial,  exposure_time_initial, conversion_gain_initial, image_accumulation_initial, spatial_filter_initial, confidence_threshold_initial = CreateDevice()
 
@@ -432,88 +501,85 @@ def run(output_queue):
     
     t = threading.Thread(target=HeliosThread, args=(device, scale_z), daemon=True)
     t.start()
-    
+
     # The setup() is loaded in
-    cap, blueUpper, blueLower, yellowUpper, yellowLower = Setup()
+    cap, blueUpper, blueLower, yellowUpper, yellowLower, bayesValues = Setup()
     # Time is used to calculate FPS. (might not be necesarry to calculate for each frame, might be enough to display once a second)
     
     prev_time = time.time()
-    with open("m111log", "a", newline="") as f:
-        writer = csv.writer(f)
 
-        while True:
-            ret, frame = cap.read() # Get the frame from the camera
-            current_time = time.time() #more fps
-            fps = 1 / (current_time - prev_time)
-            prev_time = current_time
-            if not ret: # If there are is no camera
-                print("Can't read camera, ending stream")
-                break
-            if latestDistanceFrame is None:
-                print("Vent på data fra Helios")
-            else:
-                heatmap, depth = latestDistanceFrame
-                #cv2.imshow("Helios Heatmap", depth)
+    while True:
+        ret, frame = cap.read() # Get the frame from the camera
+        current_time = time.time() #more fps
+        fps = 1 / (current_time - prev_time)
+        prev_time = current_time
+        if not ret: # If there are is no camera
+            print("Can't read camera, ending stream")
+            break
+        if latestDistanceFrame is None:
+             print("Vent på data fra Helios")
+        else:
+             heatmap, depth = latestDistanceFrame
+             cv2.imshow("Helios Heatmap", depth)
 
-            # Get the masks created in Masking()
-            HSV, maskBlue, maskYellow = Masking(frame, blueUpper, blueLower, yellowUpper, yellowLower)
-            # uses the masks in found Contours to find the locations of objects
-            bboxesBlue, bboxesYellow = FindContours(maskBlue, maskYellow)
-
-            #set_nodes(device.nodemap)
-            
-            # bbBlue = CompareWithHelios(bboxesBlue, frame, depth)
-            # bbYellow = CompareWithHelios(bboxesYellow, frame, depth)
-
-            # Checks if it has found any Blue and Yellow BBoxes, before trying to draw them
-            
-            combine, edgeContours, cleanedMask = EdgeDetection(HSV)
-
-            # cv2.drawContours drawing all contours (-1) in red, (BGR: 0,0,255) with thickness 3
-            frameEdges = frame.copy()
-            if debug == True:
-                cv2.drawContours(frameEdges, edgeContours, -1, (0, 0, 255), 3)
-
-            #verifying edge-detection
-            bboxesBlueVerified = VerifyConesWithEdges(bboxesBlue, combine, 0.1)
-            bboxesYellowVerified = VerifyConesWithEdges(bboxesYellow, combine, 0.3)
-
-            bboxBlue, bboxYellow, _, _, centerPointsBlue, centerPointsYellow = MergeBbox(bboxesBlueVerified , bboxesYellowVerified)
-
-            positions = DistToCenter(centerPointsBlue, centerPointsYellow, depth)
-            print(f"ConePos: {positions}")
+        # Get the masks created in Masking()
+        HSV, maskBlue, maskYellow = Masking(frame, blueUpper, blueLower, yellowUpper, yellowLower)
+        # uses the masks in found Contours to find the locations of objects
+        bboxesBlue, bboxesYellow = FindContours(maskBlue, maskYellow)
 
 
-            output_queue.put(positions)
+        # Checks if it has found any Blue and Yellow BBoxes, before trying to draw them
+        
+        combine, edgeContours = EdgeDetection(HSV)
 
-            #Log
-            timestamp = time.time()
-            writer.writerow([timestamp, json.dumps(positions)])
-            f.flush()
+        # cv2.drawContours drawing all contours (-1) in red, (BGR: 0,0,255) with thickness 3
+        frameEdges = frame.copy()
+        if debug == True:
+            cv2.drawContours(frameEdges, edgeContours, -1, (0, 0, 255), 3)
 
-            #draw the varified boxes and edges
-            for boxb in bboxBlue:
-                DrawBoundingBox(boxb, frameEdges, "Blue")
-            for boxy in bboxYellow:
-                DrawBoundingBox(boxy, frameEdges, "Yellow")
-            for boxb in bboxesBlueVerified:
-                cv2.putText(frameEdges, "Edge-verified", (int(boxb[1]), int(boxb[2]-20)),
-                            cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255,0,0), 1)
-            for boxy in bboxesYellowVerified:
-                cv2.putText(frameEdges, "Edge-verified", (int(boxy[1]), int(boxy[2]-20)), 
-                            cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0,255,255), 1)
-            
+        # Verifying edge-detection
+        bboxesBlueVerified = VerifyConesWithEdges(bboxesBlue, combine, 0.1)
+        bboxesYellowVerified = VerifyConesWithEdges(bboxesYellow, combine, 0.3)
 
-            #cv2.imshow("frame", frame)
-            cv2.imshow("frame Edges", frameEdges)
+        # Shape Classify
+        bboxesBlueClassified = ShapeClassification(bayesValues, bboxesBlueVerified)
+        bboxesYellowClassified = ShapeClassification(bayesValues, bboxesYellowVerified)
 
-            #cv2.imshow("Frame with boxes and edges", maskBlue)
-            # Show the combined mask and frame with bboxes
-            #cv2.imshow("mask", mask)
-            # prints FPS
-            # print(f"FPS: {fps}")
-            if cv2.waitKey(1) == ord('q'):
-                break
+        # Depth
+        blobBlue, mixBlue = CompareWithHelios(bboxesBlueClassified, frame, depth)
+        blobYellow, mixYellow = CompareWithHelios(bboxesYellowClassified, frame, depth)
+
+        bboxBlue, bboxYellow, _, _, centerPointsBlue, centerPointsYellow = MergeBbox(blobBlue , blobYellow)
+
+        positions = DistToCenter(centerPointsBlue, mixBlue, centerPointsYellow, mixYellow, depth)
+        print(f"ConePos: {positions}")
+
+
+        #output_queue.put(positions)
+
+        #draw the varified boxes and edges
+        for boxb in bboxBlue:
+            DrawBoundingBox(boxb, frameEdges, "Blue")
+        for boxy in bboxYellow:
+            DrawBoundingBox(boxy, frameEdges, "Yellow")
+        for boxb in bboxesBlueVerified:
+            cv2.putText(frameEdges, "Edge-verified", (int(boxb[1]), int(boxb[2]-20)),
+                        cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255,0,0), 1)
+        for boxy in bboxesYellowVerified:
+            cv2.putText(frameEdges, "Edge-verified", (int(boxy[1]), int(boxy[2]-20)), 
+                        cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0,255,255), 1)
+         
+
+        #cv2.imshow("frame", frame)
+        cv2.imshow("frame Edges", frameEdges)
+
+        #cv2.imshow("Frame with boxes and edges", maskBlue)
+        # Show the combined mask and frame with bboxes
+        #cv2.imshow("mask", mask)
+        # prints FPS
+        # print(f"FPS: {fps}")
+        if cv2.waitKey(1) == ord('q'):
+            break
     
     stopEvent.set()
     t.join()
@@ -527,6 +593,9 @@ def run(output_queue):
         HeliosEnd(device, pixelFormat_initial, operating_mode_initial,  exposure_time_initial, conversion_gain_initial, image_accumulation_initial, spatial_filter_initial, confidence_threshold_initial)
     except Exception as e:
         print("Fejl under HeliosEnd", e)
+        import traceback
+        traceback.print_exc()
+
 
 # if __name__ == "__main__":
 #     main()
