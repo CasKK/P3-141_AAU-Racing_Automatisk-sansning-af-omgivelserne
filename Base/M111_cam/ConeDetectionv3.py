@@ -453,7 +453,7 @@ def run(output_queue):
                 print("Vent på data fra Helios")
             else:
                 heatmap, depth = latestDistanceFrame
-                cv2.imshow("Helios Heatmap", depth)
+                #cv2.imshow("Helios Heatmap", depth)
 
             # Get the masks created in Masking()
             HSV, maskBlue, maskYellow = Masking(frame, blueUpper, blueLower, yellowUpper, yellowLower)
