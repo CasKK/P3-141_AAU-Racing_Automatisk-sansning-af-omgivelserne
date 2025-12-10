@@ -120,52 +120,50 @@ def matchPoints(points, oldPoints, maxDist = 200*200):######################## C
     matched_candidates_ids = set()
 
     for dist2, i, j in pairs: # Loop through all of the pairs
-        if dist2 > maxDist: # if the distance is greater than max distance, dont match the point
+        if dist2 > maxDist: # if the distance is greater than max distance, stop matching points
             break
-        if i in used_unmatched_points: 
+        if i in used_unmatched_points: # Skip if unmatched point is already used
             continue
         # Update candidate with current detection
-        cands[j]["x"] = unmatched[i][0]
-        cands[j]["y"] = unmatched[i][1]
-        cands[j]["hit"] = cands[j].get("hit", 0) + 1
-        cands[j]["miss"] = 0
-        used_unmatched_points.add(i)
-        matched_candidates_ids.add(j)
+        cands[j]["x"] = unmatched[i][0] # Update candidate position x
+        cands[j]["y"] = unmatched[i][1] # Update canditepositio y
+        cands[j]["hit"] = cands[j].get("hit", 0) + 1 # Increment the hit count
+        cands[j]["miss"] = 0 # reset miss count
+        used_unmatched_points.add(i) # mark the unmatched point as used 
+        matched_candidates_ids.add(j) # mark the candidate as matched
 
-    # 3) Candidates not matched this frame → miss++
+    # Simple, loop through all candidates and increment miss count for those that were not matched.
     for idx, c in enumerate(cands):
-        if idx not in matched_c_idxs:
+        if idx not in matched_candidates_ids:
             c["miss"] = c.get("miss", 0) + 1
 
-    # 4) Truly new detections → start as candidates (hit=1)
-    for ui, d in enumerate(unmatched):
-        if ui not in used_ui:
+    # Actually new candidates (not matched prior to this)
+    for i, unmatched_point in enumerate(unmatched):
+        if i not in used_unmatched_points:
             cands.append({
-                "x": d[0],
-                "y": d[1],
-                "type": d[2] if len(d) >= 3 else None,
+                "x": unmatched_point[0],
+                "y": unmatched_point[1],
+                "type": unmatched_point[2] if len(unmatched_point) >= 3 else None,
                 "hit": 1,
                 "miss": 0
-            })
+            }) # append new candidate
 
-    # 5) Promote confirmed candidates to tracked (add with miss_count=0), mark updated
-    for idx in range(len(cands) - 1, -1, -1):
-        c = cands[idx]
-        if c["hit"] >= CONFIRM_FRAMES:
-            oldPoints.append([c["x"], c["y"], c["type"], 0])  # [x, y, type, miss_count=0]
-            updated.add(len(oldPoints) - 1)
-            del cands[idx]
+    # promote confirmed candidates to oldPoints
+    for idx in range(len(cands) - 1, -1, -1): # Loop backwards through candidates
+        candidate = cands[idx] #Current candidate
+        if candidate["hit"] >= CONFIRM_FRAMES: # If candidate has enough hits
+            oldPoints.append([candidate["x"], candidate["y"], candidate["type"], 0])  # Add to oldPoints
+            updated.add(len(oldPoints) - 1) # Mark as updated
+            del cands[idx]  # Remove from candidates
 
-    # 6) Prune flickering candidates that disappeared
+    # destroy candidates that missed too many frames.
     for idx in range(len(cands) - 1, -1, -1):
         if cands[idx]["miss"] > CANDIDATE_MISS_MAX:
             del cands[idx]
 
-    # 7) Persist candidate buffer for this list
+    # Update global candidate buffer
     _PENDING[id(oldPoints)] = cands
-    # ----------------------------------------------------------------------
-
-    
+    # ----------------------------------------------------------------------    
     # keep track of missed countss
 
     for idx, op in enumerate(oldPoints):
