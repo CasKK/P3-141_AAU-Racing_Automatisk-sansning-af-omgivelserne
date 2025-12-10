@@ -432,7 +432,7 @@ def run(output_queue):
     
     t = threading.Thread(target=HeliosThread, args=(device, scale_z), daemon=True)
     t.start()
-
+    
     # The setup() is loaded in
     cap, blueUpper, blueLower, yellowUpper, yellowLower = Setup()
     # Time is used to calculate FPS. (might not be necesarry to calculate for each frame, might be enough to display once a second)
