@@ -295,30 +295,37 @@ def ShapeClassification(bayesValues, bbox):
     return classified
 
 
+
 def CompareWithHelios(contours, frame, depth):   
     '''
     Function to check if a BLOB is seperated by distance and therefore should be to different objekts.
     '''
 
+    def Scale(contour, x, y, w, h, scale):
+        cx = x + w / 2
+        cy = y + h / 2
+
+        #   https://nvsabhilash.me/2019/06/29/Scaling-and-Rotating-contours.html?utm_source=chatgpt.com
+        scaledContour = contour.copy().astype(np.float32)
+        scaledContour[:, 0, 0] = cx + (scaledContour[:, 0, 0] - cx) * scale
+        scaledContour[:, 0, 1] = cy + (scaledContour[:, 0, 1] - cy) * scale
+        scaledContour = scaledContour.astype(np.int32)
+
+        return scaledContour, cx, cy
+
     newContours = []
     mixCone = []
+
+    depth = cv2.medianBlur(depth, 5)
+
 
     # For-loop to go through all contours in a list to
     for contour in contours:
         c, x, y, w, h, d, t = contour
         
-        if t == 0 or t == 1 or t ==3:
-            
-            scale = 0.5
+        if t == 0 or t == 1 or t ==2:
 
-            cx = x + w / 2
-            cy = y + h / 2
-
-            # Skaler konturen i forhold til øverste venstre hjørne   https://nvsabhilash.me/2019/06/29/Scaling-and-Rotating-contours.html?utm_source=chatgpt.com
-            scaledContour = c.copy().astype(np.float32)
-            scaledContour[:, 0, 0] = cx + (scaledContour[:, 0, 0] - cx) * scale
-            scaledContour[:, 0, 1] = cy + (scaledContour[:, 0, 1] - cy) * scale
-            scaledContour = scaledContour.astype(np.int32)
+            scaledContour, cx, cy = Scale(c, x, y, w, h, 0.75)
 
             # Lav en maske ud fra den skalerede kontur
             mask = np.zeros_like(frame[:, :, 0])
@@ -327,30 +334,33 @@ def CompareWithHelios(contours, frame, depth):
             # Calculates mean of depth
             mean = cv2.mean(depth, mask=mask)[0]
 
-            if t == 3:
+            if t == 2:
 
                 mixCone.append((cx, cy, mean))
             else:
                 newContours.append((x, y, w, h, d, mean))
         
         if t == 3:
-      
+            scaledContour, _, _ = Scale(c, x, y, w, h, 0.8)
+
             # Makes a mask that from the current contour     
             mask = np.zeros_like(frame[:, :, 0])
-            cv2.drawContours(mask, [c], -1, 255, thickness=cv2.FILLED)
+            cv2.drawContours(mask, [scaledContour], -1, 255, thickness=cv2.FILLED)
 
-            # Making a threshold relative to the size of the BLOB
-            threshold = np.count_nonzero(mask)*0.04
+            
             
             # Use the mask of the on the depthmap to isolate the area, using median filter to remove noise, flattening it to a 1D-list
             # with only every 3 pixel. Then sorting it
             depthValues = depth[mask==255]
-            depthValues = cv2.medianBlur(depthValues, 5)
             depthValues = depthValues.flatten()[::3]
             depthValues.sort()
 
             peaks = []
             currentPeak = []
+
+            # Making a threshold relative to the size of the BLOB
+            threshold = np.count_nonzero(mask)*0.1
+
 
             # For-loop that goes through the list and make an nev list if the value between to elements is higher than 150.
             # Each new current list is a peak, and will be appended to the peak list if there is a minimum of pixel in it

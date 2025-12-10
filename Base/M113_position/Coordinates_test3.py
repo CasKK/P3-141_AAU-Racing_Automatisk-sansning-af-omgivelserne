@@ -229,7 +229,7 @@ image_height = 480
 # Candidate buffers keyed per tracked list (Blue/Yellow separated by id(oldPoints))
 _PENDING = {}               # id(oldPoints) -> list of {'x','y','type','hit','miss'}
 
-CONFIRM_FRAMES = 3          # require 3 consecutive matches to start tracking (set to 2 if you prefer)
+CONFIRM_FRAMES = 2         # require 3 consecutive matches to start tracking (set to 2 if you prefer)
 CANDIDATE_MISS_MAX = 2      # drop a candidate if it disappears for 2 frames
 
 
