@@ -165,6 +165,7 @@ print(closest_u)
 
 
 #print("steering (rad):", steer_first)
+print("steering (deg):", np.degrees(steering[0]))
 print("steering (deg):", np.degrees(steer_now))
 
 
