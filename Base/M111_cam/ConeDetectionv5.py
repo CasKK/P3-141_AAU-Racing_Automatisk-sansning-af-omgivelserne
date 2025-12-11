@@ -12,8 +12,8 @@ debug = False
 
 frame_width = 640
 frame_height = 480
-fourcc = cv2.VideoWriter_fourcc(*"MJPG")
-out = cv2.VideoWriter(f"output_{time.time()}.MJPG", fourcc, 30.0, (frame_width, frame_height))
+fourcc = cv2.VideoWriter_fourcc(*"avi")
+out = cv2.VideoWriter(f"output_{time.time()}.avi", fourcc, 30.0, (frame_width, frame_height))
 
 camera_lock = threading.Lock()
 # The setup function is where the camera is inititiated and the limits for color segmentation is defined in HSV
