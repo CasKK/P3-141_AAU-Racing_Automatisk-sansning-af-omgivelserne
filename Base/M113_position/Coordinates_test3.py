@@ -80,6 +80,8 @@ def matchPoints(points, oldPoints, maxDist = 200*200):######################## C
     for dist, i, j, dist1 in pointList: # Match points
         if dist > maxDist + (dist1 * 0.005): ################################## COEFFICIENT HERE!!! #############
             break
+        if i in used_i:
+            continue
         if j not in updated:
             oldPoints[int(j)][0:2] = points[int(i)][0:2]
             updated.add(j)
@@ -123,6 +125,8 @@ def matchPoints(points, oldPoints, maxDist = 200*200):######################## C
         if dist2 > maxDist: # if the distance is greater than max distance, stop matching points
             break
         if i in used_unmatched_points: # Skip if unmatched point is already used
+            continue
+        if j in matched_candidates_ids: # Skip if unmatched point is already used
             continue
         # Update candidate with current detection
         cands[j]["x"] = unmatched[i][0] # Update candidate position x

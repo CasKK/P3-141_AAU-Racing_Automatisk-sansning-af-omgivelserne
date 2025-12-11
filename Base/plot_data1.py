@@ -1,7 +1,9 @@
 import csv
 import json
 import matplotlib.pyplot as plt
+from matplotlib.patches import FancyArrowPatch
 import numpy as np
+import time
 import copy
 from scipy.interpolate import splprep, splev
 
@@ -124,37 +126,106 @@ def main():
     steer_now = steering[int(closest_u)]
 
 
-
-
-
-
-
-plt.ion()
-fig, ax = plt.subplots()
-plt.xlim(-3000, 3000)
-plt.ylim(-500, 6000)
-ax.set_aspect("equal")
-ax.grid(True)
-
-yscatter = ax.scatter([], [], c='yellow', edgecolors='black')
-bscatter = ax.scatter([], [], c='blue', edgecolors='black')
-
-for frame in frames:
-    blue = frame["blue"]
-    yellow = frame["yellow"]
+def run():
+    inputVectorsBTurn = frames[0]["blue"]
+    inputVectorsYTurn = frames[0]["yellow"]
     main()
+    plt.ion()
+    fig, ax = plt.subplots()
+    fig.set_size_inches(8, 8)
+    plt.xlim(-3000, 3000)
+    plt.ylim(-500, 6000)
+    if len(inputVectorsBTurn) == 0 or len(inputVectorsYTurn) == 0:
+        bx = [-100, 100]
+        by = [100, 100]
+        yx = [-100, 100]
+        yy = [200, 200]
+    else: 
+        bx = [p[0] for p in inputVectorsBTurn]
+        by = [p[1] for p in inputVectorsBTurn]
+        yx = [p[0] for p in inputVectorsYTurn]
+        yy = [p[1] for p in inputVectorsYTurn]
+    cx = [p[0] for p in centers]
+    cy = [p[1] for p in centers]
 
-    if len(blue) == 0 or len(yellow) == 0:
-        bx, by = [-100, 100], [100, 100]
-        yx, yy = [-100, 100], [200, 200]
-    else:
-        bx = [p[0] for p in blue]
-        by = [p[1] for p in blue]
-        yx = [p[0] for p in yellow]
-        yy = [p[1] for p in yellow]
+    
+    yscatter = ax.scatter(yx, yy, c='yellow', edgecolors='black')
+    bscatter = ax.scatter(bx, by, c='blue', edgecolors='black')
+    cscatter = ax.scatter(bx, by, c='red', edgecolors='black')
+    line, = ax.plot(x_smooth, y_smooth, label="Smoothed B-spline fit", linewidth=2)
 
-    bscatter.set_offsets(list(zip(bx, by)))
-    yscatter.set_offsets(list(zip(yx, yy)))
+    tx, ty = dx_u[int(closest_u)], dy_u[int(closest_u)]
+    t_norm = np.hypot(tx, ty)
+    tx /= t_norm
+    ty /= t_norm
+    delta = steering[int(closest_u)]
+    wx =  np.cos(delta)*tx - np.sin(delta)*ty
+    wy =  np.sin(delta)*tx + np.cos(delta)*ty
+    arrow_scale = 200
+    start = (x_smooth[int(closest_u)], y_smooth[int(closest_u)])
+    end = (start[0] + wx * arrow_scale, start[1] + wy * arrow_scale)
+    arrow = FancyArrowPatch(start, end, arrowstyle='->', mutation_scale=15, color='green')
+    ax.add_patch(arrow)
+    
+    ax.set_aspect('equal')
+    
+    plt.show(block=False)
+    plt.pause(0.01)
+    for frame in frames:
+        
+        inputVectorsBTurn = frame["blue"]
+        inputVectorsYTurn = frame["yellow"]
+        main()
+        # try:
+        #     inputVectorsBTurn, inputVectorsYTurn = input_queue.get_nowait()
+        #     print(f"M121Points: {inputVectorsBTurn} --- {inputVectorsYTurn} --- {time.time()}")
+        #     main()
+        # except Empty:
+        #     pass
 
-    plt.pause(0.05)
+        steer_deg = np.degrees(steer_now)
+        steer_deg = np.clip(steer_deg, -90, 90)
+        print(f"steer_deg: {steer_deg}")
+
+        print(f"Closest_U: {int(closest_u)}")
+        print(f"inputVectorsBTurn: {inputVectorsBTurn}")
+        print(f"inputVectorsYTurn: {inputVectorsYTurn}")
+        
+        if len(inputVectorsBTurn) == 0 or len(inputVectorsYTurn) == 0:
+            bx = [-100, 100]
+            by = [100, 100]
+            yx = [-100, 100]
+            yy = [200, 200]
+        else: 
+            bx = [p[0] for p in inputVectorsBTurn]
+            by = [p[1] for p in inputVectorsBTurn]
+            yx = [p[0] for p in inputVectorsYTurn]
+            yy = [p[1] for p in inputVectorsYTurn]
+        cx = [p[0] for p in centers]
+        cy = [p[1] for p in centers]
+
+        tx, ty = dx_u[int(closest_u)], dy_u[int(closest_u)]
+        t_norm = np.hypot(tx, ty)
+        tx /= t_norm
+        ty /= t_norm
+        delta = steering[int(closest_u)]
+        wx =  np.cos(delta)*tx - np.sin(delta)*ty
+        wy =  np.sin(delta)*tx + np.cos(delta)*ty
+        arrow_scale = 400
+
+        start = (x_smooth[int(closest_u)], y_smooth[int(closest_u)])
+        end = (start[0] + wx * arrow_scale, start[1] + wy * arrow_scale)
+
+        arrow.set_positions(start, end)
+
+        yscatter.set_offsets(list(zip(yx, yy)))
+        bscatter.set_offsets(list(zip(bx, by)))
+        cscatter.set_offsets(list(zip(cx, cy)))
+        line.set_data(x_smooth, y_smooth)
+        plt.pause(0.001)
+
+
+if __name__ == "__main__":
+    run()
+
 

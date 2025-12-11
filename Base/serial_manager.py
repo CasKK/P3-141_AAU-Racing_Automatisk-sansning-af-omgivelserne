@@ -8,7 +8,7 @@ import datetime
 
 def run(read_queue, write_queue):
     ser = serial.Serial('/dev/ttyACM0', 115200, timeout=0.1)
-    time.sleep(5)  # allow Arduino reset
+    time.sleep(9)  # allow Arduino reset
     with open("seriallog", "a", newline="") as f:
         writer = csv.writer(f)
         while True:
