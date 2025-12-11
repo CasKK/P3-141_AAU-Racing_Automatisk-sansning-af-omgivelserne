@@ -217,9 +217,9 @@ void loop() {
   Encoder();
   float angleValue = Gyroscope();
   if (time - lastTime >= 33000){
-    Serial.print((int)angleValue);
+    Serial.print(angleValue);
     Serial.print(", ");
-    Serial.println((long)encoderCount);
+    Serial.println(encoderCount);
     lastTime = time;
   }
 }
