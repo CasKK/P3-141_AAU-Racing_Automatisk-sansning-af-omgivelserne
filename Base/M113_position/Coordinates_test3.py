@@ -301,6 +301,7 @@ def run(input_queue, output_queue, serial_queue): #
             depth_listB = []
             depth_listY = []
             coordinates_listB, coordinates_listY = input_queue.get()
+            print(f"M113 ahaha --- {time.time()}")
             depth_listB = [p[2] for p in coordinates_listB]
             depth_listY = [p[2] for p in coordinates_listY]
 
