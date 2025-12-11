@@ -236,7 +236,7 @@ CANDIDATE_MISS_MAX = 2      # drop a candidate if it disappears for more than
 
 
 
-slope = math.tan(math.radians((fov)/2))
+slope = math.tan(math.radians((180-50)/2))
 
 # Other initial parameters
 coordinates_listB = []#[36,300, 0],
