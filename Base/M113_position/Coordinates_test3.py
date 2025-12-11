@@ -243,8 +243,8 @@ coordinates_listY = []#[1240,300, 1],
                     # [850,450, 1],
                     # [750,550, 1],
                     # [700,666, 1]]
-depth_listB = [500, 1500, 2500, 3500]     # Some 'random' distances for testing purposes as no real test data is available currently.
-depth_listY = [500, 1500, 2500, 3500]
+depth_listB = []#500, 1500, 2500, 3500]     # Some 'random' distances for testing purposes as no real test data is available currently.
+depth_listY = []#500, 1500, 2500, 3500]
 angle = 0                       # readGyro(z) initial start value
 lastAngle = 0                   # Initial "zero" / start orientation ##########################
 distance = 0                    # readEncoder() initial start value

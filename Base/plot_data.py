@@ -46,5 +46,5 @@ for frame in frames:
     bscatter.set_offsets(list(zip(bx, by)))
     yscatter.set_offsets(list(zip(yx, yy)))
 
-    plt.pause(0.2)
+    plt.pause(0.05)
 
