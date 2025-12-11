@@ -29,7 +29,6 @@ def Setup():
         cmd = ["v4l2-ctl", f"--device={device}", "--set-ctrl", f"{control}={value}"]
         subprocess.run(cmd, check=True)
 
-
     videoDevices = sorted(glob.glob("/dev/video*"))
     cam = None
     selectedDevice = None
