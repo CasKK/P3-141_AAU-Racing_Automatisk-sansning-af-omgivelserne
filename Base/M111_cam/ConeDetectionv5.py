@@ -10,7 +10,10 @@ import threading
 kernel = np.ones([5,5], np.uint8)
 debug = False
 
-
+frame_width = 640
+frame_height = 480
+fourcc = cv2.VideoWriter_fourcc(*"MJPG")
+out = cv2.VideoWriter(f"output_{time.time()}.MJPG", fourcc, 15, (frame_width, frame_height))
 
 camera_lock = threading.Lock()
 # The setup function is where the camera is inititiated and the limits for color segmentation is defined in HSV
@@ -616,7 +619,7 @@ def run(output_queue):
 
         with open("fps.txt", "a") as f:
             f.write(f"{fps}\n")
-
+        out.write(frameEdges)
         #cv2.imshow("frame", frame)
         #cv2.imshow("frame Edges", frameEdges)
         # print(f"frame: {np.asanyarray(frame).shape}")
