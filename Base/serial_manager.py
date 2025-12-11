@@ -5,9 +5,10 @@ import csv
 import json
 import datetime
 
-zeroFound = False
 
 def run(read_queue, write_queue):
+    
+    zeroFound = False
     ser = serial.Serial('/dev/ttyACM0', 115200, timeout=0.1)
     time.sleep(9)  # allow Arduino reset
     with open("seriallog", "a", newline="") as f:
