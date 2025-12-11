@@ -222,14 +222,15 @@ def run(input_queue, serial_queue):
     with open("m121log", "a", newline="") as f:
         writer = csv.writer(f)
         while True:
+            
+            inputVectorsBTurn, inputVectorsYTurn = input_queue.get()
 
-            try:
-                inputVectorsBTurn, inputVectorsYTurn = input_queue.get_nowait()
-                print(f"M121Points: {inputVectorsBTurn} --- {inputVectorsYTurn} --- {time.time()}")
-                main()
-            except Empty:
-                pass
-
+            # try:
+            #     inputVectorsBTurn, inputVectorsYTurn = input_queue.get_nowait()
+            #     print(f"M121Points: {inputVectorsBTurn} --- {inputVectorsYTurn} --- {time.time()}")
+            #     main()
+            # except Empty:
+            #     pass
 
             steer_deg = np.degrees(steer_now)
             steer_deg = np.clip(steer_deg, -90, 90)

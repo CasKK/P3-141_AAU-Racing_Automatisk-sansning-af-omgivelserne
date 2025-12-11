@@ -235,16 +235,16 @@ CANDIDATE_MISS_MAX = 2      # drop a candidate if it disappears for more than
 slope = math.tan(math.radians((fov)/2))
 
 # Other initial parameters
-coordinates_listB = [[36,300, 0],
-                    [370,450, 0],
-                    [470,550, 0],
-                    [520,666, 0]]
-coordinates_listY = [[1240,300, 1],
-                    [850,450, 1],
-                    [750,550, 1],
-                    [700,666, 1]]
-depth_listB = [500, 1500, 2500, 3500]     # Some 'random' distances for testing purposes as no real test data is available currently.
-depth_listY = [500, 1500, 2500, 3500]
+coordinates_listB = []#[36,300, 0],
+                    # [370,450, 0],
+                    # [470,550, 0],
+                    # [520,666, 0]]
+coordinates_listY = []#[1240,300, 1],
+                    # [850,450, 1],
+                    # [750,550, 1],
+                    # [700,666, 1]]
+depth_listB = []#500, 1500, 2500, 3500]     # Some 'random' distances for testing purposes as no real test data is available currently.
+depth_listY = []#500, 1500, 2500, 3500]
 angle = 0                       # readGyro(z) initial start value
 lastAngle = 0                   # Initial "zero" / start orientation ##########################
 distance = 0                    # readEncoder() initial start value

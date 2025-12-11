@@ -206,7 +206,7 @@ def run(input_queue, output_queue, serial_queue): #
                 angle, encoder = serial_queue.get()
                 distance = encoder * wheel_circumference / pulses_per_revolution
                 print("Angle:", angle, "   distance:", distance)
-                # angle = math.radians(angle)
+                angle = math.radians(angle)
             
             main()
             # Enforce max queue length of 5
