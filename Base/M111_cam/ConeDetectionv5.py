@@ -491,13 +491,13 @@ def DistToCenter (conesBlue1, conesBlue2, conesYellow1, conesYellow2, depth):
             x, y, z = int(x), int(y), int(z)
             if z != 0:
                 array.append((x, y, z))
-            print(f"Dist: {z}")
+            #print(f"Dist: {z}")
         for cone in cones2:
             x, y, z = cone
             x, y = int(x), int(y), int(z)
             if z != 0:
                 array.append((x, y, z))
-            print(f"Dist: {z}")
+            #print(f"Dist: {z}")
         combined.append(array)
 
     CalcZ(conesBlue1, conesBlue2, blueArray, combinedArray)
