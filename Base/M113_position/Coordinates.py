@@ -82,6 +82,9 @@ def matchPoints(points, oldPoints, maxDist = 200*200):######################## C
         if i not in oldPoints:
             oldPoints.append(i)
             updated.add(len(oldPoints)-1)
+
+    #Remove Noise points
+    
     
     # for i, oldPoint in enumerate(oldPoints): # Move old points # Old version
     #     if i not in updated:

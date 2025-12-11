@@ -10,8 +10,12 @@ def ensure_landscape(img):
     return img
 
 #indlæs billeder
-img1 = cv2.imread("frames/frame_1764928187431.png")#reference Helios
-img2 = cv2.imread("captured_frames/frame_000.png") #skal transformeres Webcam
+# img1 = cv2.imread("frames/frame_1764928187431.png")#reference Helios
+# img2 = cv2.imread("captured_frames/frame_000.png") #skal transformeres Webcam
+
+img1 = cv2.imread("/home/aaujetson67/Documents/P3-141_AAU-Racing_Automatisk-sansning-af-omgivelserne/Base/heatmap.jpg")  # Reference image (Helios)
+img2 = cv2.imread("/home/aaujetson67/Documents/P3-141_AAU-Racing_Automatisk-sansning-af-omgivelserne/Base/captured_frames/Webcam_screenshot_10.12.2025.png")  # Image to align (Webcam)
+
 
 #sørg for begge billeder er samme orientering
 img1 = ensure_landscape(img1)

@@ -178,47 +178,47 @@ def run(input_queue, serial_queue):
     time.sleep(5.5)
     global inputVectorsBTurn, inputVectorsYTurn
     main()
-    plt.ion()
-    fig, ax = plt.subplots()
-    fig.set_size_inches(8, 8)
-    plt.xlim(-3000, 3000)
-    plt.ylim(-500, 6000)
-    if len(inputVectorsBTurn) == 0 or len(inputVectorsYTurn) == 0:
-        bx = [-100, 100]
-        by = [100, 100]
-        yx = [-100, 100]
-        yy = [200, 200]
-    else: 
-        bx = [p[0] for p in inputVectorsBTurn]
-        by = [p[1] for p in inputVectorsBTurn]
-        yx = [p[0] for p in inputVectorsYTurn]
-        yy = [p[1] for p in inputVectorsYTurn]
-    cx = [p[0] for p in centers]
-    cy = [p[1] for p in centers]
+    # plt.ion()
+    # fig, ax = plt.subplots()
+    # fig.set_size_inches(8, 8)
+    # plt.xlim(-3000, 3000)
+    # plt.ylim(-500, 6000)
+    # if len(inputVectorsBTurn) == 0 or len(inputVectorsYTurn) == 0:
+    #     bx = [-100, 100]
+    #     by = [100, 100]
+    #     yx = [-100, 100]
+    #     yy = [200, 200]
+    # else: 
+    #     bx = [p[0] for p in inputVectorsBTurn]
+    #     by = [p[1] for p in inputVectorsBTurn]
+    #     yx = [p[0] for p in inputVectorsYTurn]
+    #     yy = [p[1] for p in inputVectorsYTurn]
+    # cx = [p[0] for p in centers]
+    # cy = [p[1] for p in centers]
 
     
-    yscatter = ax.scatter(yx, yy, c='yellow', edgecolors='black')
-    bscatter = ax.scatter(bx, by, c='blue', edgecolors='black')
-    cscatter = ax.scatter(bx, by, c='red', edgecolors='black')
-    line, = ax.plot(x_smooth, y_smooth, label="Smoothed B-spline fit", linewidth=2)
+    # yscatter = ax.scatter(yx, yy, c='yellow', edgecolors='black')
+    # bscatter = ax.scatter(bx, by, c='blue', edgecolors='black')
+    # cscatter = ax.scatter(bx, by, c='red', edgecolors='black')
+    # line, = ax.plot(x_smooth, y_smooth, label="Smoothed B-spline fit", linewidth=2)
 
-    tx, ty = dx_u[int(closest_u)], dy_u[int(closest_u)]
-    t_norm = np.hypot(tx, ty)
-    tx /= t_norm
-    ty /= t_norm
-    delta = steering[int(closest_u)]
-    wx =  np.cos(delta)*tx - np.sin(delta)*ty
-    wy =  np.sin(delta)*tx + np.cos(delta)*ty
-    arrow_scale = 200
-    start = (x_smooth[int(closest_u)], y_smooth[int(closest_u)])
-    end = (start[0] + wx * arrow_scale, start[1] + wy * arrow_scale)
-    arrow = FancyArrowPatch(start, end, arrowstyle='->', mutation_scale=15, color='green')
-    ax.add_patch(arrow)
+    # tx, ty = dx_u[int(closest_u)], dy_u[int(closest_u)]
+    # t_norm = np.hypot(tx, ty)
+    # tx /= t_norm
+    # ty /= t_norm
+    # delta = steering[int(closest_u)]
+    # wx =  np.cos(delta)*tx - np.sin(delta)*ty
+    # wy =  np.sin(delta)*tx + np.cos(delta)*ty
+    # arrow_scale = 200
+    # start = (x_smooth[int(closest_u)], y_smooth[int(closest_u)])
+    # end = (start[0] + wx * arrow_scale, start[1] + wy * arrow_scale)
+    # arrow = FancyArrowPatch(start, end, arrowstyle='->', mutation_scale=15, color='green')
+    # ax.add_patch(arrow)
     
-    ax.set_aspect('equal')
+    # ax.set_aspect('equal')
     
-    plt.show(block=False)
-    plt.pause(0.01)
+    # plt.show(block=False)
+    # plt.pause(0.01)
     with open("m121log", "a", newline="") as f:
         writer = csv.writer(f)
         while True:
@@ -250,38 +250,38 @@ def run(input_queue, serial_queue):
             # print(f"inputVectorsBTurn: {inputVectorsBTurn}")
             # print(f"inputVectorsYTurn: {inputVectorsYTurn}")
             
-            if len(inputVectorsBTurn) == 0 or len(inputVectorsYTurn) == 0:
-                bx = [-100, 100]
-                by = [100, 100]
-                yx = [-100, 100]
-                yy = [200, 200]
-            else: 
-                bx = [p[0] for p in inputVectorsBTurn]
-                by = [p[1] for p in inputVectorsBTurn]
-                yx = [p[0] for p in inputVectorsYTurn]
-                yy = [p[1] for p in inputVectorsYTurn]
-            cx = [p[0] for p in centers]
-            cy = [p[1] for p in centers]
+            # if len(inputVectorsBTurn) == 0 or len(inputVectorsYTurn) == 0:
+            #     bx = [-100, 100]
+            #     by = [100, 100]
+            #     yx = [-100, 100]
+            #     yy = [200, 200]
+            # else: 
+            #     bx = [p[0] for p in inputVectorsBTurn]
+            #     by = [p[1] for p in inputVectorsBTurn]
+            #     yx = [p[0] for p in inputVectorsYTurn]
+            #     yy = [p[1] for p in inputVectorsYTurn]
+            # cx = [p[0] for p in centers]
+            # cy = [p[1] for p in centers]
 
-            tx, ty = dx_u[int(closest_u)], dy_u[int(closest_u)]
-            t_norm = np.hypot(tx, ty)
-            tx /= t_norm
-            ty /= t_norm
-            delta = steering[int(closest_u)]
-            wx =  np.cos(delta)*tx - np.sin(delta)*ty
-            wy =  np.sin(delta)*tx + np.cos(delta)*ty
-            arrow_scale = 400
+            # tx, ty = dx_u[int(closest_u)], dy_u[int(closest_u)]
+            # t_norm = np.hypot(tx, ty)
+            # tx /= t_norm
+            # ty /= t_norm
+            # delta = steering[int(closest_u)]
+            # wx =  np.cos(delta)*tx - np.sin(delta)*ty
+            # wy =  np.sin(delta)*tx + np.cos(delta)*ty
+            # arrow_scale = 400
 
-            start = (x_smooth[int(closest_u)], y_smooth[int(closest_u)])
-            end = (start[0] + wx * arrow_scale, start[1] + wy * arrow_scale)
+            # start = (x_smooth[int(closest_u)], y_smooth[int(closest_u)])
+            # end = (start[0] + wx * arrow_scale, start[1] + wy * arrow_scale)
 
-            arrow.set_positions(start, end)
+            # arrow.set_positions(start, end)
 
-            yscatter.set_offsets(list(zip(yx, yy)))
-            bscatter.set_offsets(list(zip(bx, by)))
-            cscatter.set_offsets(list(zip(cx, cy)))
-            line.set_data(x_smooth, y_smooth)
-            plt.pause(0.001)
+            # yscatter.set_offsets(list(zip(yx, yy)))
+            # bscatter.set_offsets(list(zip(bx, by)))
+            # cscatter.set_offsets(list(zip(cx, cy)))
+            # line.set_data(x_smooth, y_smooth)
+            # plt.pause(0.001)
 
 time_end = time.time() # stop time
 print(f"Runtime: {time_end - time_start:.5f} seconds")
