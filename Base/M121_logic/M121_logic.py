@@ -224,6 +224,7 @@ def run(input_queue, serial_queue):
         while True:
             
             inputVectorsBTurn, inputVectorsYTurn = input_queue.get()
+            main()
             # try:
             #     inputVectorsBTurn, inputVectorsYTurn = input_queue.get_nowait()
             #     print(f"M121Points: {inputVectorsBTurn} --- {inputVectorsYTurn} --- {time.time()}")
