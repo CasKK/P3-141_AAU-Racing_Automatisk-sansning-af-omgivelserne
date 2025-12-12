@@ -622,7 +622,7 @@ def run(output_queue):
         #     f.write(f"{fps}\n")
         out.write(frameEdges)
         #cv2.imshow("frame", frame)
-        cv2.imshow("frame Edges", frameEdges)
+        #cv2.imshow("frame Edges", frameEdges)
         # print(f"frame: {np.asanyarray(frame).shape}")
         #cv2.imshow("depth", frame)
         #cv2.imshow("depth", blended)

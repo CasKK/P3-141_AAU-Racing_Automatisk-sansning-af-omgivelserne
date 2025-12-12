@@ -1,29 +1,11 @@
-import math
 import numpy as np
+from scipy.interpolate import splprep, splev
 import time
 import copy
 import matplotlib.pyplot as plt
 from matplotlib.patches import FancyArrowPatch
 import plotly.express as px
-from scipy.interpolate import splprep, splev
-import serial
-import datetime
 import csv
-import json
-from queue import Empty
-
-# inputVectorsB = [[-368.0, 540.0, 0],
-#                 [-381.0, 2580.0, 0],
-#                 [-363.0, 2250.0, 0],
-#                 [-344.0, 3540.0, 0],
-#                 [-365.0, 1100.0, 0],
-#                 [-353.0, 4690.0, 0]]
-# inputVectorsY = [[353.0, 670.0, 1],
-#                 [353.0, 3510.0, 1],
-#                 [351.0, 2150.0, 1],
-#                 [379.0, 2630.0, 1],
-#                 [377.0, 1330.0, 1],
-#                 [377.0, 4490.0, 1]]
 
 # ##### Original turn #######
 # inputVectorsYTurn = [[-368.0, 540.0, 0],
@@ -61,12 +43,9 @@ inputVectorsYTurn = [[353.0, 670.0, 1],
                     [3800.0, 5700.0, 1],
                     [3810.0, 6300.0, 1]]
 
-car1 = [0,1400]
-car = [0,1500] # Car position will probably be constant in this module. Used to ajust spline to get correct 'current' steering angle.
-car2 = [0,1600] # Because the first angle of the spline is almost never correct, the spline is also made on some past cones.
+car = [0, 1500] # Car position is constant in this module. Used to ajust spline to get correct 'current' steering angle.
 
-
-def closestNP1(vectorList):########### Sort point list based on distance from (0,0) ############
+def closestNP1(vectorList):########### Sort point list based on distance from (0,0) (Simple) ############
     vectorList = copy.deepcopy(vectorList)
     for i, vector in enumerate(vectorList):
         result = np.sqrt(vector[0]**2 + vector[1]**2)
@@ -79,9 +58,8 @@ def closestNP1(vectorList):########### Sort point list based on distance from (0
     vectorList = np.array(sorted(vectorList, key=lambda x: x[-2]))
     return vectorList
 
-
 def calculateCenters(distanceListA, distanceListB):############# Canculate center points from two point lists ############
-    centers = [car.copy()] #, car1.copy(), car2.copy()]#, [0, 1600], [0, 1700]]#, [0,50], [0,100], [0,150], [0,200]] #, [0,250], [0,350], [0,300], [0,25], [0,75], [0,125], [0,175], [0,225], [0,275], [0,325], [0,375]
+    centers = [car.copy()]
     # distanceListA = copy.deepcopy(distanceListA)
     # distanceListB = copy.deepcopy(distanceListB)
     # print(car)
@@ -95,17 +73,40 @@ def calculateCenters(distanceListA, distanceListB):############# Canculate cente
             next_vecA = distanceListA[i + 1]
             next_vecB = distanceListB[i + 1]
             centers.append([((next_vecA[0] + vecB[0]) / 2 + ((next_vecB[0] + vecA[0]) / 2)) / 2, ((next_vecA[1] + vecB[1]) / 2 + (next_vecB[1] + vecA[1]) / 2) / 2])
+    
+    lenA = len(distanceListA)
+    lenB = len(distanceListB)
+    if lenA != lenB and min(lenA, lenB) > 0:
+        if lenA > lenB:
+            last = distanceListB[-1]
+            extra_points = distanceListA[len(distanceListB):]
+        else:
+            last = distanceListA[-1]
+            extra_points = distanceListB[len(distanceListA):]
+        for p in extra_points:
+            x = (last[0] + p[0]) / 2
+            y = (last[1] + p[1]) / 2
+            centers.append([x, y])
+    
+    temp = len(centers)
+    for i in range(temp):
+        if i < temp - 1:
+            next_cen = centers[i + 1]
+            x = (next_cen[0] + centers[i][0]) / 2
+            y = (next_cen[1] + centers[i][1]) / 2
+            centers.append([x, y])
+
     for i, center in enumerate(centers):
         centers[i].append(np.sqrt(center[0]**2 + center[1]**2))
-    centers = np.array(sorted(centers, key=lambda x: x[-2]))
+    centers = np.array(sorted(centers, key=lambda x: x[-1]))
     _, idx = np.unique(centers, axis=0, return_index=True)
     centers = centers[np.sort(idx)]
+
     if len(centers) < 6:
         centers = np.array([car.copy(), [0, 1600], [0, 1700], [0, 1800], [0, 1900], [0, 2000]])
     
     # print(centers)
     return centers
-
 
 def BSpline(points):########### Make and fit Basis-spline ############### 
     d = 0
@@ -175,50 +176,50 @@ def main():
 ############### some run stuff ###############
 
 def run(input_queue, serial_queue):
-    time.sleep(5.5)
+    time.sleep(0.5)
     global inputVectorsBTurn, inputVectorsYTurn
     main()
-    plt.ion()
-    fig, ax = plt.subplots()
-    fig.set_size_inches(8, 8)
-    plt.xlim(-3000, 3000)
-    plt.ylim(-500, 6000)
-    if len(inputVectorsBTurn) == 0 or len(inputVectorsYTurn) == 0:
-        bx = [-100, 100]
-        by = [100, 100]
-        yx = [-100, 100]
-        yy = [200, 200]
-    else: 
-        bx = [p[0] for p in inputVectorsBTurn]
-        by = [p[1] for p in inputVectorsBTurn]
-        yx = [p[0] for p in inputVectorsYTurn]
-        yy = [p[1] for p in inputVectorsYTurn]
-    cx = [p[0] for p in centers]
-    cy = [p[1] for p in centers]
+    # plt.ion()
+    # fig, ax = plt.subplots()
+    # fig.set_size_inches(8, 8)
+    # plt.xlim(-3000, 3000)
+    # plt.ylim(-500, 6000)
+    # if len(inputVectorsBTurn) == 0 or len(inputVectorsYTurn) == 0:
+    #     bx = [-100, 100]
+    #     by = [100, 100]
+    #     yx = [-100, 100]
+    #     yy = [200, 200]
+    # else: 
+    #     bx = [p[0] for p in inputVectorsBTurn]
+    #     by = [p[1] for p in inputVectorsBTurn]
+    #     yx = [p[0] for p in inputVectorsYTurn]
+    #     yy = [p[1] for p in inputVectorsYTurn]
+    # cx = [p[0] for p in centers]
+    # cy = [p[1] for p in centers]
 
     
-    yscatter = ax.scatter(yx, yy, c='yellow', edgecolors='black')
-    bscatter = ax.scatter(bx, by, c='blue', edgecolors='black')
-    cscatter = ax.scatter(bx, by, c='red', edgecolors='black')
-    line, = ax.plot(x_smooth, y_smooth, label="Smoothed B-spline fit", linewidth=2)
+    # yscatter = ax.scatter(yx, yy, c='yellow', edgecolors='black')
+    # bscatter = ax.scatter(bx, by, c='blue', edgecolors='black')
+    # cscatter = ax.scatter(bx, by, c='red', edgecolors='black')
+    # line, = ax.plot(x_smooth, y_smooth, label="Smoothed B-spline fit", linewidth=2)
 
-    tx, ty = dx_u[int(closest_u)], dy_u[int(closest_u)]
-    t_norm = np.hypot(tx, ty)
-    tx /= t_norm
-    ty /= t_norm
-    delta = steering[int(closest_u)]
-    wx =  np.cos(delta)*tx - np.sin(delta)*ty
-    wy =  np.sin(delta)*tx + np.cos(delta)*ty
-    arrow_scale = 200
-    start = (x_smooth[int(closest_u)], y_smooth[int(closest_u)])
-    end = (start[0] + wx * arrow_scale, start[1] + wy * arrow_scale)
-    arrow = FancyArrowPatch(start, end, arrowstyle='->', mutation_scale=15, color='green')
-    ax.add_patch(arrow)
+    # tx, ty = dx_u[int(closest_u)], dy_u[int(closest_u)]
+    # t_norm = np.hypot(tx, ty)
+    # tx /= t_norm
+    # ty /= t_norm
+    # delta = steering[int(closest_u)]
+    # wx =  np.cos(delta)*tx - np.sin(delta)*ty
+    # wy =  np.sin(delta)*tx + np.cos(delta)*ty
+    # arrow_scale = 200
+    # start = (x_smooth[int(closest_u)], y_smooth[int(closest_u)])
+    # end = (start[0] + wx * arrow_scale, start[1] + wy * arrow_scale)
+    # arrow = FancyArrowPatch(start, end, arrowstyle='->', mutation_scale=15, color='green')
+    # ax.add_patch(arrow)
     
-    ax.set_aspect('equal')
+    # ax.set_aspect('equal')
     
-    plt.show(block=False)
-    plt.pause(0.01)
+    # plt.show(block=False)
+    # plt.pause(0.01)
     with open("m121log", "a", newline="") as f:
         writer = csv.writer(f)
         while True:
@@ -251,38 +252,38 @@ def run(input_queue, serial_queue):
             # print(f"inputVectorsBTurn: {inputVectorsBTurn}")
             # print(f"inputVectorsYTurn: {inputVectorsYTurn}")
             
-            if len(inputVectorsBTurn) == 0 or len(inputVectorsYTurn) == 0:
-                bx = [-100, 100]
-                by = [100, 100]
-                yx = [-100, 100]
-                yy = [200, 200]
-            else: 
-                bx = [p[0] for p in inputVectorsBTurn]
-                by = [p[1] for p in inputVectorsBTurn]
-                yx = [p[0] for p in inputVectorsYTurn]
-                yy = [p[1] for p in inputVectorsYTurn]
-            cx = [p[0] for p in centers]
-            cy = [p[1] for p in centers]
+            # if len(inputVectorsBTurn) == 0 or len(inputVectorsYTurn) == 0:
+            #     bx = [-100, 100]
+            #     by = [100, 100]
+            #     yx = [-100, 100]
+            #     yy = [200, 200]
+            # else: 
+            #     bx = [p[0] for p in inputVectorsBTurn]
+            #     by = [p[1] for p in inputVectorsBTurn]
+            #     yx = [p[0] for p in inputVectorsYTurn]
+            #     yy = [p[1] for p in inputVectorsYTurn]
+            # cx = [p[0] for p in centers]
+            # cy = [p[1] for p in centers]
 
-            tx, ty = dx_u[int(closest_u)], dy_u[int(closest_u)]
-            t_norm = np.hypot(tx, ty)
-            tx /= t_norm
-            ty /= t_norm
-            delta = steering[int(closest_u)]
-            wx =  np.cos(delta)*tx - np.sin(delta)*ty
-            wy =  np.sin(delta)*tx + np.cos(delta)*ty
-            arrow_scale = 400
+            # tx, ty = dx_u[int(closest_u)], dy_u[int(closest_u)]
+            # t_norm = np.hypot(tx, ty)
+            # tx /= t_norm
+            # ty /= t_norm
+            # delta = steering[int(closest_u)]
+            # wx =  np.cos(delta)*tx - np.sin(delta)*ty
+            # wy =  np.sin(delta)*tx + np.cos(delta)*ty
+            # arrow_scale = 400
 
-            start = (x_smooth[int(closest_u)], y_smooth[int(closest_u)])
-            end = (start[0] + wx * arrow_scale, start[1] + wy * arrow_scale)
+            # start = (x_smooth[int(closest_u)], y_smooth[int(closest_u)])
+            # end = (start[0] + wx * arrow_scale, start[1] + wy * arrow_scale)
 
-            arrow.set_positions(start, end)
+            # arrow.set_positions(start, end)
 
-            yscatter.set_offsets(list(zip(yx, yy)))
-            bscatter.set_offsets(list(zip(bx, by)))
-            cscatter.set_offsets(list(zip(cx, cy)))
-            line.set_data(x_smooth, y_smooth)
-            plt.pause(0.001)
+            # yscatter.set_offsets(list(zip(yx, yy)))
+            # bscatter.set_offsets(list(zip(bx, by)))
+            # cscatter.set_offsets(list(zip(cx, cy)))
+            # line.set_data(x_smooth, y_smooth)
+            # plt.pause(0.001)
 
 time_end = time.time() # stop time
 print(f"Runtime: {time_end - time_start:.5f} seconds")
