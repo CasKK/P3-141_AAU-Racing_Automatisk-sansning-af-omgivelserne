@@ -25,5 +25,5 @@ def run(output_queue):
         blue = frame["blue"]
         yellow = frame["yellow"]
         output_queue.put((blue, yellow))
-        time.sleep(0.2)
+        time.sleep(1)
 
