@@ -4,6 +4,7 @@ float someOtherVal = 0;
 
 void setup() {
   Serial.begin(115200);
+  delay(7000);
 }
 
 void loop() {
@@ -11,7 +12,7 @@ void loop() {
   Serial.print(",");
   Serial.print(someOtherVal);
   Serial.print("\n");
-  someVal += 0.001;
-  someOtherVal += 0.1;
-  delay(10);
+  someVal += 0.02;
+  someOtherVal += 2;
+  delay(67);
 }

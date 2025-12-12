@@ -7,8 +7,10 @@ import datetime
 
 
 def run(read_queue, write_queue):
+    
+    zeroFound = False
     ser = serial.Serial('com5', 115200, timeout=0.1)
-    time.sleep(5)  # allow Arduino reset
+    time.sleep(9)  # allow Arduino reset
     with open("seriallog", "a", newline="") as f:
         writer = csv.writer(f)
         while True:
@@ -20,16 +22,19 @@ def run(read_queue, write_queue):
                         angle_str, count_str = line.split(',')
                         angle = float(angle_str) 
                         count = float(count_str)
-                        if read_queue.qsize() >= 5:
-                            try:
-                                read_queue.get_nowait()  # remove oldest item
-                            except:
-                                pass
-                        read_queue.put((angle, count))
-                        print("Angle:", angle, "Count:", count)
-                        timestamp = time.time()
-                        writer.writerow([timestamp, angle, count])
-                        f.flush()
+                        if count < 1:
+                            zeroFound = True
+                        if zeroFound:
+                            if read_queue.qsize() >= 5:
+                                try:
+                                    read_queue.get_nowait()  # remove oldest item
+                                except:
+                                    pass
+                            read_queue.put((angle, count))
+                            print("Angle:", angle, "Count:", count)
+                            timestamp = time.time()
+                            writer.writerow([timestamp, angle, count])
+                            f.flush()
                     except ValueError:
                         print("Bad line:", line)
                 else:
@@ -38,7 +43,8 @@ def run(read_queue, write_queue):
             # --- WRITE ---
             while not write_queue.empty():
                 message = write_queue.get()
-                # ser.write((message + '\n').encode('utf-8'))
                 print(f"messageOutToArduino: {message}")
+                message = bytes([message])
+                ser.write(message)
 
             time.sleep(0.001)
