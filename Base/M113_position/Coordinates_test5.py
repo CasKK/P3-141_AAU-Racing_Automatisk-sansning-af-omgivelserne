@@ -249,32 +249,33 @@ lastDistance = 0                # Initial "zero" / start encoder value #########
 car = [0, 1500]                 # Car position (constant, the world moves around the car)
 # newPointsB = one_frame_cone_positions(coordinates_listB, depth_listB, fov, image_width, image_height) # Initial frame of cones.
 # newPointsY = one_frame_cone_positions(coordinates_listY, depth_listY, fov, image_width, image_height) # Initial frame of cones.
+some1 = 1500
 oldPointsB =    [[-300,     5,      0,  0],
                 [-300,      750,    0,  0],
                 [-300,      1500,   0,  0],
-                [-368.0,    540.0,  0,  0],
-                [-365.0,    1100.0, 0,  0],
-                [-403.0,    2250.0, 0,  0],
-                [-1.0,      3680.0, 0,  0],
-                [1044.0,    4540.0, 0,  0],
-                [1847.0,    4690.0, 0,  0],
-                [2477.0,    4800.0, 0,  0],
-                [2900.0,    5200.0, 0,  0],
-                [3000.0,    5600.0, 0,  0],
-                [2910.0,    6300.0, 0,  0]] # Some initial old points behind the car to ensure correct b-spline.
+                [-368.0,    540.0 + some1,  0,  0],
+                [-365.0,    1100.0 + some1, 0,  0],
+                [-403.0,    2250.0 + some1, 0,  0],
+                [-1.0,      3680.0 + some1, 0,  0],
+                [1044.0,    4540.0 + some1, 0,  0],
+                [1847.0,    4690.0 + some1, 0,  0],
+                [2477.0,    4800.0 + some1, 0,  0],
+                [2900.0,    5200.0 + some1, 0,  0],
+                [3000.0,    5600.0 + some1, 0,  0],
+                [2910.0,    6300.0 + some1, 0,  0]] # Some initial old points behind the car to ensure correct b-spline.
 oldPointsY =    [[300,      1,      1,  0],
                 [300,       755,    1,  0],
                 [300,       1505,   1,  0],
-                [353.0,     670.0,  1,  0],
-                [377.0,     1330.0, 1,  0],
-                [351.0,     2150.0, 1,  0],
-                [779.0,     3230.0, 1,  0],
-                [1353.0,    3710.0, 1,  0],
-                [1977.0,    3890.0, 1,  0],
-                [3000.0,    4000.0, 1,  0],
-                [3700.0,    4700.0, 1,  0],
-                [3800.0,    5700.0, 1,  0],
-                [3810.0,    6300.0, 1,  0]] # Some initial old points behind the car to ensure correct b-spline.
+                [353.0,     670.0 + some1,  1,  0],
+                [377.0,     1330.0 + some1, 1,  0],
+                [351.0,     2150.0 + some1, 1,  0],
+                [779.0,     3230.0 + some1, 1,  0],
+                [1353.0,    3710.0 + some1, 1,  0],
+                [1977.0,    3890.0 + some1, 1,  0],
+                [3000.0,    4000.0 + some1, 1,  0],
+                [3700.0,    4700.0 + some1, 1,  0],
+                [3800.0,    5700.0 + some1, 1,  0],
+                [3810.0,    6300.0 + some1, 1,  0]] # Some initial old points behind the car to ensure correct b-spline.
 # matchPoints(newPointsB, oldPointsB)
 # matchPoints(newPointsY, oldPointsY)
 

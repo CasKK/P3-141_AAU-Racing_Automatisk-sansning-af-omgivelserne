@@ -126,8 +126,8 @@ def run(input_queue, serial_queue):
     plt.ion()
     fig, ax = plt.subplots()
     fig.set_size_inches(8, 8)
-    plt.xlim(-3000, 3000)
-    plt.ylim(-500, 6000)
+    plt.xlim(-3000, 5000)
+    plt.ylim(-500, 8000)
     if len(inputVectorsB) == 0 or len(inputVectorsY) == 0:
         bx = [-100, 100]
         by = [100, 100]
