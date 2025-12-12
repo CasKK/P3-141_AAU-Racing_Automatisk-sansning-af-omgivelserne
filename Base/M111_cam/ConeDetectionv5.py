@@ -61,15 +61,15 @@ def Setup():
     #manually setting the camera setings
     setCameraControl(selectedDevice, "auto_exposure",1)
     setCameraControl(selectedDevice, "exposure_time_absolute", 200)
-    setCameraControl(selectedDevice, "gain", 10)#250)
+    setCameraControl(selectedDevice, "gain", 25)#250)
     setCameraControl(selectedDevice, "focus_automatic_continuous",0)
     setCameraControl(selectedDevice, "focus_absolute", 0)
     setCameraControl(selectedDevice, "white_balance_automatic", 1)
 
     upperLimitBlue = np.array([123, 252, 150], np.uint8)
-    lowerLimitBlue = np.array([103, 92, 5], np.uint8)
+    lowerLimitBlue = np.array([103, 92, 0], np.uint8)
     upperLimitYellow = np.array([33,255,230], np.uint8)
-    lowerLimitYellow = np.array([13,120,30], np.uint8)
+    lowerLimitYellow = np.array([13,120,0], np.uint8)
 
     bayesValues = {
         "topMean": [0.9644363764088177, 1.1378143182985014, 1.3961731590237239, 0.8197422981794419, 6.8076923076923075],
@@ -163,17 +163,17 @@ def FindContours(maskBlue, maskYellow):
                     aspect = h_minArea / w_minArea if w_minArea != 0 else 0
                 else:
                     aspect = w_minArea / h_minArea if h_minArea != 0 else 0
-                if not (1 < aspect < 1.9):
+                if not (1 < aspect < 4):
                     return False
 
                 # Check compactness
                 compactness = area / (h_minArea*w_minArea) if (h_minArea*w_minArea) != 0 else 0
-                if not (0.5 < compactness < 0.95):
+                if not (0.5 < compactness < 1.1):
                     return False
 
                 # Check if the bbox is to small
                 x,y,w_bbox,h_bbox = cv2.boundingRect(c)
-                if not (w_bbox > 10 and h_bbox > 10):
+                if not (w_bbox > 5 and h_bbox > 5):
                     return False
                 
                 # Covexity defects
@@ -331,7 +331,7 @@ def CompareWithHelios(contours, frame, depth):
         
         if t == 0 or t == 1 or t == 2  :# or t == 3:
 
-            scaledContour, cx, cy = Scale(c, x, y, w, h, 0.05)
+            scaledContour, cx, cy = Scale(c, x, y, w, h, 0.2)
 
             # Lav en maske ud fra den skalerede kontur
             mask = np.zeros_like(frame[:, :, 0])
@@ -431,7 +431,7 @@ def MergeBbox(bboxBlue, bboxYellow):
                     a = aM
                 else:
                     a = aM
-                if (abs(cyC-cyM) < diameterC*2) and (abs(cxC-cxM) < diameterC*1.5) and (abs(depthC-depthM) < 900): # Checks to see if the center c is close enough to the entry m
+                if (abs(cyC-cyM) < diameterC*6) and (abs(cxC-cxM) < diameterC*1.5) and (abs(depthC-depthM) < 700): # Checks to see if the center c is close enough to the entry m
                     merged[i] = ((cxC+cxM)/2, (cyC+cyM)/2, abs(cyC-cyM)*1.5, abs(cxC-cxM)*3, abs((depthC+depthM)/2), a) # If it is close enough a new center is calculated
                     x1 = min(cxC-wC/2, cxM-wM/2) # The minimum and maximum values for the new center is created
                     y1 = min(cyC-hC/2, cyM-hM/2)
@@ -468,10 +468,12 @@ def DrawBoundingBox(box, frame, color, depth):
 
     if d != 0:
         if  color == "Blue":
+            label = f"" 
             label = f"{d:.0f}" if d is not None else 0 #"Blue Cone"
             frameColor = (255,0,0)
 
         elif color == "Yellow":
+            label = f"" 
             label = f"{d:.0f}" if d is not None else 0 #"Yellow Cone"
             frameColor = (0,255,255)
 
@@ -616,11 +618,11 @@ def run(output_queue):
         # with open("depthTest.txt", "a") as f:
         #     f.write(f"{depth}\n")
 
-        with open("fps.txt", "a") as f:
-            f.write(f"{fps}\n")
+        # with open("fps.txt", "a") as f:
+        #     f.write(f"{fps}\n")
         out.write(frameEdges)
         #cv2.imshow("frame", frame)
-        #cv2.imshow("frame Edges", frameEdges)
+        cv2.imshow("frame Edges", frameEdges)
         # print(f"frame: {np.asanyarray(frame).shape}")
         #cv2.imshow("depth", frame)
         #cv2.imshow("depth", blended)
