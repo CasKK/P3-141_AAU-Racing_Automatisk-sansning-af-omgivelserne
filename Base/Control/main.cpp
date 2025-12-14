@@ -178,7 +178,7 @@ void Encoder(){
 
     // Update throttle only at RPM refresh
     int throttle_us = P_control(desiredSpeed, rpm);
-    throttle_us = 1000; // Neutral for testing
+    // throttle_us = 1000; // Neutral for testing
     esc.writeMicroseconds(throttle_us);
 
     if (debug == true){
