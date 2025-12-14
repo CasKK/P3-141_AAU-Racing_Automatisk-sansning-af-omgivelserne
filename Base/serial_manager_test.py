@@ -9,7 +9,7 @@ import datetime
 def run(read_queue, write_queue):
     
     zeroFound = False
-    ser = serial.Serial('com5', 115200, timeout=0.1)
+    ser = serial.Serial('com6', 115200, timeout=0.1)
     time.sleep(9)  # allow Arduino reset
     with open("seriallog", "a", newline="") as f:
         writer = csv.writer(f)
