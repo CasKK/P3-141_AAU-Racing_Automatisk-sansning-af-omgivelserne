@@ -262,7 +262,10 @@ oldPointsB =    [[-300,     5,      0,  0],
                 [2477.0,    4800.0 + some1, 0,  0],
                 [2900.0,    5200.0 + some1, 0,  0],
                 [3000.0,    5600.0 + some1, 0,  0],
-                [2910.0,    6300.0 + some1, 0,  0]] # Some initial old points behind the car to ensure correct b-spline.
+                [2910.0,    6300.0 + some1, 0,  0],
+                [2910.0,    6900.0 + some1, 0,  0],
+                [2910.0,    7500.0 + some1, 0,  0],
+                [2910.0,    8000.0 + some1, 0,  0]] # Some initial old points behind the car to ensure correct b-spline.
 oldPointsY =    [[300,      1,      1,  0],
                 [300,       755,    1,  0],
                 [300,       1505,   1,  0],
@@ -275,7 +278,10 @@ oldPointsY =    [[300,      1,      1,  0],
                 [3000.0,    4000.0 + some1, 1,  0],
                 [3700.0,    4700.0 + some1, 1,  0],
                 [3800.0,    5700.0 + some1, 1,  0],
-                [3810.0,    6300.0 + some1, 1,  0]] # Some initial old points behind the car to ensure correct b-spline.
+                [3810.0,    6300.0 + some1, 1,  0],
+                [3810.0,    6900.0 + some1, 1,  0],
+                [3810.0,    7500.0 + some1, 1,  0],
+                [3810.0,    8000.0 + some1, 1,  0]] # Some initial old points behind the car to ensure correct b-spline.
 # matchPoints(newPointsB, oldPointsB)
 # matchPoints(newPointsY, oldPointsY)
 
