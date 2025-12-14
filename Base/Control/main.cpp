@@ -144,7 +144,7 @@ float Gyroscope(){
   float gyroRawZ = icm20600.getGyroscopeZ() - gyro_offset;
   float gyroZ_dps = gyroRawZ / GYRO_SENS;   // convert to deg/s
 
-  angle += gyroZ_dps * dt;                  // now angle is in degrees
+  angle += gyroZ_dps * dt;  
   if (debug == true){
     Serial.print(">time:");
     Serial.println(micros() - time);
