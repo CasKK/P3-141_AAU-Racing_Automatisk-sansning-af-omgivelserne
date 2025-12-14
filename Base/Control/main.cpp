@@ -135,16 +135,14 @@ float MotorToServo(float x) {
 // -----------------------------------------------------------
 // Main Loop
 // -----------------------------------------------------------
-const float GYRO_SENS = 65.5f;
 float Gyroscope(){
-  unsigned long t_now = micros();
-  float dt = (t_now - t_prev) * 1e-6f;
+  unsigned long t_now = 0;
+  t_now = micros();       
+  float dt = (t_now - t_prev)/ 1e6;
+  //Serial.println((t_now - t_prev),10);
   t_prev = t_now;
-
-  float gyroRawZ = icm20600.getGyroscopeZ() - gyro_offset;
-  float gyroZ_dps = gyroRawZ / GYRO_SENS;   // convert to deg/s
-
-  angle += gyroZ_dps * dt;  
+  float gyroZ = icm20600.getGyroscopeZ() - gyro_offset; 
+  angle += gyroZ * dt; 
   if (debug == true){
     Serial.print(">time:");
     Serial.println(micros() - time);
