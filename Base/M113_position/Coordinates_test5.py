@@ -317,7 +317,7 @@ def run(output_queue, serial_queue):
 
         while True: ##########################
             
-            wheel_circumference = 577.6 # in mm
+            wheel_circumference = 537.2 # in mm
             pulses_per_revolution = 100
             
             angle, encoder = serial_queue.get()
