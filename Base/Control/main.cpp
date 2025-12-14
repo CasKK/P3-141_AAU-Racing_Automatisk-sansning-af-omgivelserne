@@ -135,7 +135,7 @@ float MotorToServo(float x) {
 // -----------------------------------------------------------
 // Main Loop
 // -----------------------------------------------------------
-
+const float GYRO_SENS = 16.4f;
 float Gyroscope(){
   unsigned long t_now = micros();
   float dt = (t_now - t_prev) * 1e-6f;
