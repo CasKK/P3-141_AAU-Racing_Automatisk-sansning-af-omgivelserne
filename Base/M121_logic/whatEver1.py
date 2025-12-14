@@ -146,38 +146,38 @@ def run(input_queue, serial_queue):
     time.sleep(0.5)
     global inputVectorsB, inputVectorsY
     main()
-    # plt.ion()
-    # fig, ax = plt.subplots()
-    # fig.set_size_inches(8, 8)
-    # plt.xlim(-3000, 5000)
-    # plt.ylim(-500, 8000)
-    # if len(inputVectorsB) == 0 or len(inputVectorsY) == 0:
-    #     bx = [-100, 100]
-    #     by = [100, 100]
-    #     yx = [-100, 100]
-    #     yy = [200, 200]
-    # else: 
-    #     bx = [p[0] for p in inputVectorsB]
-    #     by = [p[1] for p in inputVectorsB]
-    #     yx = [p[0] for p in inputVectorsY]
-    #     yy = [p[1] for p in inputVectorsY]
-    # cx = [p[0] for p in centers]
-    # cy = [p[1] for p in centers]
+    plt.ion()
+    fig, ax = plt.subplots()
+    fig.set_size_inches(8, 8)
+    plt.xlim(-3000, 5000)
+    plt.ylim(-500, 8000)
+    if len(inputVectorsB) == 0 or len(inputVectorsY) == 0:
+        bx = [-100, 100]
+        by = [100, 100]
+        yx = [-100, 100]
+        yy = [200, 200]
+    else: 
+        bx = [p[0] for p in inputVectorsB]
+        by = [p[1] for p in inputVectorsB]
+        yx = [p[0] for p in inputVectorsY]
+        yy = [p[1] for p in inputVectorsY]
+    cx = [p[0] for p in centers]
+    cy = [p[1] for p in centers]
     
-    # yscatter = ax.scatter(yx, yy, c='yellow', edgecolors='black')
-    # bscatter = ax.scatter(bx, by, c='blue', edgecolors='black')
-    # cscatter = ax.scatter(bx, by, c='red', edgecolors='black')
-    # line, = ax.plot(x_smooth, y_smooth, label="Smoothed B-spline fit", linewidth=2)
+    yscatter = ax.scatter(yx, yy, c='yellow', edgecolors='black')
+    bscatter = ax.scatter(bx, by, c='blue', edgecolors='black')
+    cscatter = ax.scatter(bx, by, c='red', edgecolors='black')
+    line, = ax.plot(x_smooth, y_smooth, label="Smoothed B-spline fit", linewidth=2)
 
-    # start = (car[0], car[1])
-    # end = (targetX + car[0], targetX + car[1])
-    # arrow = FancyArrowPatch(start, end, arrowstyle='->', mutation_scale=15, color='green')
-    # ax.add_patch(arrow)
+    start = (car[0], car[1])
+    end = (targetX + car[0], targetX + car[1])
+    arrow = FancyArrowPatch(start, end, arrowstyle='->', mutation_scale=15, color='green')
+    ax.add_patch(arrow)
     
-    # ax.set_aspect('equal')
+    ax.set_aspect('equal')
     
-    # plt.show(block=False)
-    # plt.pause(0.01)
+    plt.show(block=False)
+    plt.pause(0.01)
     with open("m121log", "a", newline="") as f:
         writer = csv.writer(f)
         while True:
@@ -201,25 +201,25 @@ def run(input_queue, serial_queue):
             writer.writerow([timestamp, steer_deg])
             f.flush()
             
-            # if len(inputVectorsB) == 0 or len(inputVectorsY) == 0:
-            #     bx = [-100, 100]
-            #     by = [100, 100]
-            #     yx = [-100, 100]
-            #     yy = [200, 200]
-            # else: 
-            #     bx = [p[0] for p in inputVectorsB]
-            #     by = [p[1] for p in inputVectorsB]
-            #     yx = [p[0] for p in inputVectorsY]
-            #     yy = [p[1] for p in inputVectorsY]
-            # cx = [p[0] for p in centers]
-            # cy = [p[1] for p in centers]
+            if len(inputVectorsB) == 0 or len(inputVectorsY) == 0:
+                bx = [-100, 100]
+                by = [100, 100]
+                yx = [-100, 100]
+                yy = [200, 200]
+            else: 
+                bx = [p[0] for p in inputVectorsB]
+                by = [p[1] for p in inputVectorsB]
+                yx = [p[0] for p in inputVectorsY]
+                yy = [p[1] for p in inputVectorsY]
+            cx = [p[0] for p in centers]
+            cy = [p[1] for p in centers]
 
-            # start = (car[0], car[1])
-            # end = (targetX + car[0], targetX + car[1])
-            # arrow.set_positions(start, end)
+            start = (car[0], car[1])
+            end = (targetX + car[0], targetX + car[1])
+            arrow.set_positions(start, end)
 
-            # yscatter.set_offsets(list(zip(yx, yy)))
-            # bscatter.set_offsets(list(zip(bx, by)))
-            # cscatter.set_offsets(list(zip(cx, cy)))
-            # line.set_data(x_smooth, y_smooth)
-            # plt.pause(0.001)
+            yscatter.set_offsets(list(zip(yx, yy)))
+            bscatter.set_offsets(list(zip(bx, by)))
+            cscatter.set_offsets(list(zip(cx, cy)))
+            line.set_data(x_smooth, y_smooth)
+            plt.pause(0.001)
