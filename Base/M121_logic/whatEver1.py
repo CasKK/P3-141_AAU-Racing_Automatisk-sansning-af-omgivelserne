@@ -185,7 +185,7 @@ def run(input_queue, serial_queue):
             inputVectorsB, inputVectorsY = input_queue.get()
             main()
 
-            steer_deg = np.degrees(steer_now)
+            steer_deg = np.degrees(-steer_now)
             steer_deg = np.clip(steer_deg, -90, 90)
             if serial_queue.qsize() >= 5:
                 try:
