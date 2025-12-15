@@ -1,0 +1,79 @@
+import math
+
+def pixel_to_relative_coordinates(coordinates, depth, fov, image_width, image_height):
+    #Convert pixel coordinates angle and distance to cone vector
+    # parameters:
+    # coordinates: (x, y, type) pixel coordinates for the cone
+    # depth: distance from camera to cone in millimeters
+    # fov: camera field of view in degrees
+    # image_width: width of the image in pixels
+    # image_height: height of the image in pixels
+
+    Image_centerline = image_width / 2
+    FOV_radians = math.radians(fov)
+
+    # Calculate the angle per pixel
+    angle_per_pixel = FOV_radians / image_width
+    pixel_offset = coordinates[0] - Image_centerline
+    angle_to_cone = pixel_offset * angle_per_pixel
+
+    # Calcualte cone vector in vehicle coordinate
+    y_vector = depth * math.cos(angle_to_cone)
+    x_vector = depth * math.sin(angle_to_cone)
+
+    Relative_coordinate_array = [x_vector, y_vector]
+     # Return x,y + cone type
+    return Relative_coordinate_array
+
+
+def main():
+    coordinates = [[567, 278, 1030], [71, 269, 1020], 
+                [435, 271, 2320], [204, 216, 2330],
+                [393, 203, 3530], [241, 198, 3540]]
+    fov = 60.0
+    image_width = 640
+    image_height = 480
+    for coordinate in coordinates:
+        depth = coordinate[2]
+        relative_coordinates = pixel_to_relative_coordinates(coordinate, depth, fov, image_width, image_height)
+        print(f"Pixel Coordinates: {coordinate} => Relative Coordinates (x, y): {relative_coordinates}")
+
+
+main()
+
+
+import matplotlib.pyplot as plt
+import numpy as np
+
+# Data
+cone_numbers = np.arange(1, 7)
+deviation_x = [45, 46, 16, 11, 30, 6]
+deviation_y = [53, 64, 29, 38, 4, 10]
+
+# Bar settings
+bar_width = 0.35
+
+# Create figure
+plt.figure(figsize=(8, 5))
+
+# Plot bars
+plt.bar(cone_numbers - bar_width/2, deviation_x,
+        width=bar_width, label="DeviationX")
+plt.bar(cone_numbers + bar_width/2, deviation_y,
+        width=bar_width, label="DeviationY")
+
+# Labels and title
+plt.xlabel("Cone no.")
+plt.ylabel("Deviation (mm)")
+plt.title("Deviation X/Y")
+
+# Ticks & legend
+plt.xticks(cone_numbers)
+plt.legend()
+
+# Grid (optional, matches your example)
+plt.grid(axis="y", linestyle="--", alpha=0.5)
+
+# Show plot
+plt.tight_layout()
+plt.show()
