@@ -1,0 +1,184 @@
+#!/usr/bin/env python3
+"""
+Live Helios/Helios2 depth heatmap with robust colormap scaling (Arena SDK, Jetson).
+"""
+import argparse, time, signal, sys
+import numpy as np, cv2
+from arena_api.system import system
+from arena_api.enums import PixelFormat
+
+# ===================== Mouse state =====================
+mouse_x, mouse_y = -1, -1
+mouse_inside = False
+
+def mouse_callback(event, x, y, flags, param):
+    global mouse_x, mouse_y, mouse_inside
+    if event == cv2.EVENT_MOUSEMOVE:
+        mouse_x, mouse_y = x, y
+        mouse_inside = True
+    elif event == cv2.EVENT_LBUTTONDOWN:
+        mouse_x, mouse_y = x, y
+        mouse_inside = True
+    elif event == cv2.EVENT_MOUSELEAVE:
+        mouse_inside = False
+
+# ---------- CLI ----------
+def cli():
+    p = argparse.ArgumentParser("Helios Heatmap (scaled)")
+    p.add_argument("--scale", choices=["fixed","robust","global","percentile"], default="robust")
+    p.add_argument("--near", type=int, default=None)
+    p.add_argument("--far",  type=int, default=None)
+    p.add_argument("--pmin", type=float, default=1.0)
+    p.add_argument("--pmax", type=float, default=99.0)
+    p.add_argument("--ema",  type=float, default=0.2)
+    p.add_argument("--warmup", type=int, default=30)
+    p.add_argument("--gamma", type=float, default=1.0)
+    p.add_argument("--invert", action="store_true")
+    p.add_argument("--colormap", default="turbo",
+                   choices=["turbo","inferno","magma","plasma","viridis","jet"])
+    p.add_argument("--fps", type=float, default=None)
+    p.add_argument("--buffers", type=int, default=8)
+    p.add_argument("--win", default="Helios Heatmap")
+    p.add_argument("--show_fps", action="store_true")
+    p.add_argument("--colorbar", action="store_true")
+    return p.parse_args()
+
+COLORMAPS = {
+    "jet": cv2.COLORMAP_JET,
+    "inferno": cv2.COLORMAP_INFERNO,
+    "magma": cv2.COLORMAP_MAGMA,
+    "plasma": cv2.COLORMAP_PLASMA,
+    "viridis": cv2.COLORMAP_VIRIDIS,
+    "turbo": getattr(cv2, "COLORMAP_TURBO", cv2.COLORMAP_JET)
+}
+
+stop_flag = False
+def _sigint(_s,_f):
+    global stop_flag; stop_flag = True
+
+# ---------- Scaling helpers ----------
+def compute_range(depth_u16, mode, pmin, pmax, ema_state, warm_state):
+    nz = depth_u16[depth_u16 > 0]
+    if nz.size < 50:
+        lo, hi = 0, int(depth_u16.max())
+        return lo, max(hi, lo+1), ema_state, warm_state
+
+    if mode == "percentile":
+        lo = np.percentile(nz, pmin)
+        hi = np.percentile(nz, pmax)
+        return int(lo), int(max(hi, lo+1)), ema_state, warm_state
+
+    if mode == "robust":
+        lo = np.percentile(nz, pmin)
+        hi = np.percentile(nz, pmax)
+        if ema_state is None:
+            ema_state = [int(lo), int(hi)]
+        else:
+            ema_state[0] = int((1-args.ema)*ema_state[0] + args.ema*lo)
+            ema_state[1] = int((1-args.ema)*ema_state[1] + args.ema*hi)
+        return ema_state[0], max(ema_state[1], ema_state[0]+1), ema_state, warm_state
+
+    if mode == "global":
+        if not warm_state["frozen"]:
+            warm_state["n"] += 1
+            warm_state["lo"] = min(warm_state["lo"], int(np.percentile(nz, pmin)))
+            warm_state["hi"] = max(warm_state["hi"], int(np.percentile(nz, pmax)))
+            if warm_state["n"] >= warm_state["warmup"]:
+                warm_state["frozen"] = True
+        return warm_state["lo"], max(warm_state["hi"], warm_state["lo"]+1), ema_state, warm_state
+
+    raise ValueError("Invalid mode")
+
+def apply_colormap(depth_u16, dmin, dmax, cmap_id, gamma=1.0, invert=False):
+    d = depth_u16.astype(np.float32)
+    d = np.clip(d, dmin, dmax)
+    norm = (d - dmin) / max(1.0, (dmax - dmin))
+    if invert: norm = 1.0 - norm
+    if gamma != 1.0:
+        norm = np.power(norm, 1.0/gamma)
+    u8 = (norm * 255).astype(np.uint8)
+    img = cv2.applyColorMap(u8, cmap_id)
+    img[depth_u16 == 0] = (0,0,0)
+    return img
+
+def draw_colorbar(img, dmin, dmax, cmap_id):
+    h, w = img.shape[:2]
+    bar_w, bar_h = min(300, w//3), 20
+    bar = np.linspace(0,255,bar_w,dtype=np.uint8)
+    bar = np.repeat(bar[None,:], bar_h, axis=0)
+    bar = cv2.applyColorMap(bar, cmap_id)
+    img[h-30:h-10, 10:10+bar_w] = bar
+    cv2.putText(img, f"{dmin} mm", (10, h-35),
+                cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255,255,255),1)
+    cv2.putText(img, f"{dmax} mm", (10+bar_w-70, h-35),
+                cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255,255,255),1)
+
+# ---------- Depth extraction ----------
+def get_depth_from_buffer(buf, depth_format):
+    h, w, bpp = buf.height, buf.width, buf.bits_per_pixel
+    arr = np.ctypeslib.as_array(buf.pdata, shape=(h*w*(bpp//8),))
+    if depth_format == "Coord3D_C16":
+        return arr.view(np.uint16).reshape(h,w)
+    px = arr.reshape(h,w,3)
+    return (px[:,:,1].astype(np.uint16)<<8) | px[:,:,0].astype(np.uint16)
+
+# ===================== Main =====================
+if __name__ == "__main__":
+    args = cli()
+    signal.signal(signal.SIGINT, _sigint)
+
+    devices = system.create_device()
+    if not devices:
+        print("No Helios found"); sys.exit(1)
+    dev = devices[0]
+
+    pf = dev.nodemap["PixelFormat"]
+    try:
+        pf.value = PixelFormat.Coord3D_C16
+        depth_fmt = "Coord3D_C16"
+    except:
+        pf.value = PixelFormat.Coord3D_C16Y8
+        depth_fmt = "Coord3D_C16Y8"
+
+    cmap_id = COLORMAPS[args.colormap]
+
+    cv2.namedWindow(args.win, cv2.WINDOW_NORMAL)
+    cv2.setMouseCallback(args.win, mouse_callback)
+
+    ema_state = None
+    warm_state = {"warmup":args.warmup,"n":0,"lo":1<<30,"hi":0,"frozen":False}
+
+    with dev.start_stream(args.buffers):
+        while not stop_flag:
+            buf = dev.get_buffer()
+            depth = get_depth_from_buffer(buf, depth_fmt)
+            dev.requeue_buffer(buf)
+
+            dmin, dmax, ema_state, warm_state = compute_range(
+                depth, args.scale, args.pmin, args.pmax, ema_state, warm_state)
+
+            img = apply_colormap(depth, dmin, dmax, cmap_id, args.gamma, args.invert)
+
+            # ===== Hover depth display =====
+            if mouse_inside:
+                h, w = depth.shape
+                if 0 <= mouse_x < w and 0 <= mouse_y < h:
+                    z = int(depth[mouse_y, mouse_x])
+                    txt = f"Z: {z} mm" if z > 0 else "Invalid depth"
+                    cv2.drawMarker(img, (mouse_x, mouse_y),
+                                   (255,255,255),
+                                   cv2.MARKER_CROSS, 20, 2)
+                    cv2.putText(img, txt,
+                                (mouse_x+10, mouse_y-10),
+                                cv2.FONT_HERSHEY_SIMPLEX,
+                                0.6, (255,255,255), 2)
+
+            if args.colorbar:
+                draw_colorbar(img, dmin, dmax, cmap_id)
+
+            cv2.imshow(args.win, img)
+            if cv2.waitKey(1) & 0xFF in (27, ord('q')):
+                break
+
+    cv2.destroyAllWindows()
+    system.destroy_device()
