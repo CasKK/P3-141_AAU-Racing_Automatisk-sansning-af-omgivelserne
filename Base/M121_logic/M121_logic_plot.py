@@ -81,11 +81,18 @@ def BSpline(points, smoothing, k):########### Make and fit Basis-spline ########
     dx_u, dy_u = splev(u_fine, tck, der=1)
     ddx_u, ddy_u = splev(u_fine, tck, der=2)
     
-    s = np.sqrt(dx_u**2 + dy_u**2)              # Calculus: A Complete Course, 10Ce
-    kp = (dx_u * ddy_u - dy_u * ddx_u) / (s**3) # chapter 12.5: Curvature and Torsion for General Parametrizations.
-    v_max = np.sqrt(1 / (np.abs(kp) + 1e-6))    # Speed
+    ds_du = np.sqrt(dx_u**2 + dy_u**2)                      # Calculus: A Complete Course, 10Ce
+    kp = (dx_u * ddy_u - dy_u * ddx_u) / (ds_du**3 + 1e-6)  # chapter 12.5: Curvature and Torsion for General Parametrizations.
+    arc_length = np.cumsum(ds_du * (u_fine[1] - u_fine[0]))
+    arc_length -= arc_length[0]
+    v_max = np.sqrt(1 / (np.abs(kp) + 1e-6))
     v_max = np.clip(v_max, 0, 80)
-    return v_max, x_u, y_u
+
+    dx_ds = dx_u / ds_du
+    dy_ds = dy_u / ds_du
+    heading = np.arctan2(dy_ds, dx_ds)
+
+    return v_max, x_u, y_u, dx_u, dy_u, ddx_u, ddy_u, arc_length, heading, kp
 
 def targetPoint(listA, listB): # Find the   
     newList = []
@@ -136,8 +143,8 @@ def main():
     global centers
     centers = calculateCenters(distanceSortedPointsB, distanceSortedPointsY)
 
-    global s, x_smooth, y_smooth
-    s, x_smooth, y_smooth = BSpline(centers, 20000, 5)
+    global v_max, x_smooth, y_smooth, dx_u, dy_u, ddx_u, ddy_u, arc_length, heading, kp
+    v_max, x_smooth, y_smooth, dx_u, dy_u, ddx_u, ddy_u, arc_length, heading, kp = BSpline(centers, 20000, 5)
     global steer_now, targetX, targetY
     targetX, targetY = targetPoint(x_smooth, y_smooth)
     steer_now = steeringAngle(targetX, targetY)
@@ -149,6 +156,15 @@ def run(input_queue, serial_queue):
     plt.ion()
     fig, ax = plt.subplots()
     fig.set_size_inches(8, 8)
+    ax.set_xlabel("x-coordinate (mm)")
+    ax.set_ylabel("y-coordinate (mm)")
+    #ax.set_title("C⁰ Continuity Verification")
+
+    # line_dx, = ax.plot(arc_length, kp)
+    # ax.set_xlabel("Arc length (mm)")
+    # ax.set_ylabel("Heading (rad)")
+    # ax.set_title("C¹ Continuity Verification")
+
     plt.xlim(-3000, 5000)
     plt.ylim(-500, 8000)
     if len(inputVectorsB) == 0 or len(inputVectorsY) == 0:
@@ -167,7 +183,7 @@ def run(input_queue, serial_queue):
     yscatter = ax.scatter(yx, yy, c='yellow', edgecolors='black')
     bscatter = ax.scatter(bx, by, c='blue', edgecolors='black')
     cscatter = ax.scatter(bx, by, c='red', edgecolors='black')
-    line, = ax.plot(x_smooth, y_smooth, label="Smoothed B-spline fit", linewidth=2)
+    line, = ax.plot(x_smooth, y_smooth, label="B-spline fit", linewidth=2)
 
     start = (car[0], car[1])
     end = (targetX + car[0], targetX + car[1])
@@ -222,4 +238,10 @@ def run(input_queue, serial_queue):
             bscatter.set_offsets(list(zip(bx, by)))
             cscatter.set_offsets(list(zip(cx, cy)))
             line.set_data(x_smooth, y_smooth)
+
+
+            # line_dx.set_data(arc_length, heading)
+            # ax.relim()
+            # ax.autoscale_view(scalex=True, scaley=True)
+
             plt.pause(0.001)
