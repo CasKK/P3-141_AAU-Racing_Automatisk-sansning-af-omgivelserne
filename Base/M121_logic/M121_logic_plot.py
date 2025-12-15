@@ -158,7 +158,7 @@ def run(input_queue, serial_queue):
     fig.set_size_inches(8, 8)
     ax.set_xlabel("x-coordinate (mm)")
     ax.set_ylabel("y-coordinate (mm)")
-    ax.set_title("C⁰ Continuity Verification")
+    #ax.set_title("C⁰ Continuity Verification")
 
     # line_dx, = ax.plot(arc_length, kp)
     # ax.set_xlabel("Arc length (mm)")
@@ -182,13 +182,13 @@ def run(input_queue, serial_queue):
     
     yscatter = ax.scatter(yx, yy, c='yellow', edgecolors='black')
     bscatter = ax.scatter(bx, by, c='blue', edgecolors='black')
-    #cscatter = ax.scatter(bx, by, c='red', edgecolors='black')
+    cscatter = ax.scatter(bx, by, c='red', edgecolors='black')
     line, = ax.plot(x_smooth, y_smooth, label="B-spline fit", linewidth=2)
 
     start = (car[0], car[1])
     end = (targetX + car[0], targetX + car[1])
     arrow = FancyArrowPatch(start, end, arrowstyle='->', mutation_scale=15, color='green')
-    #ax.add_patch(arrow)
+    ax.add_patch(arrow)
     
     ax.set_aspect('equal')
     
@@ -232,11 +232,11 @@ def run(input_queue, serial_queue):
 
             start = (car[0], car[1])
             end = (targetX + car[0], targetX + car[1])
-            #arrow.set_positions(start, end)
+            arrow.set_positions(start, end)
 
             yscatter.set_offsets(list(zip(yx, yy)))
             bscatter.set_offsets(list(zip(bx, by)))
-            #cscatter.set_offsets(list(zip(cx, cy)))
+            cscatter.set_offsets(list(zip(cx, cy)))
             line.set_data(x_smooth, y_smooth)
 
 
