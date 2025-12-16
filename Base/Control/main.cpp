@@ -9,7 +9,7 @@
 #define ENCODER_PIN 2
 #define PULSES_PER_REV 100       // Counting both edges (50 holes × 2)
 
-const float WHEEL_CIRCUMFERENCE = 0.5776f;  // meters
+const float WHEEL_CIRCUMFERENCE = 0.57203f;  // meters
 const bool debug = false;
 unsigned long lastCalcTime = 0;
 unsigned long lastPulseTime = 0;
@@ -31,7 +31,7 @@ unsigned long time;
 bool newData = false;
 float wheelAngle;
 float wheelAngleTemp;
-float desiredSpeed = 0.6f;  // m/s
+float desiredSpeed = 0.625f;  // m/s
 unsigned long lastTime = 0;
 ICM20600 icm20600(true);
 
