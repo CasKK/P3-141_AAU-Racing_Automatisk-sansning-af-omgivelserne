@@ -42,38 +42,156 @@ def main():
 main()
 
 
+# import matplotlib.pyplot as plt
+# import numpy as np
+
+# # Data
+# cone_numbers = np.arange(1, 7)
+# deviation_x = [45, 46, 16, 11, 30, 6]
+# deviation_y = [53, 64, 29, 38, 4, 10]
+
+# # Bar settings
+# bar_width = 0.35
+
+# # Create figure
+# plt.figure(figsize=(8, 5))
+
+# # Plot bars
+# plt.bar(cone_numbers - bar_width/2, deviation_x,
+#         width=bar_width, label="DeviationX")
+# plt.bar(cone_numbers + bar_width/2, deviation_y,
+#         width=bar_width, label="DeviationY")
+
+# # Labels and title
+# plt.xlabel("Cone no.")
+# plt.ylabel("Deviation (mm)")
+# plt.title("Deviation X/Y")
+
+# # Ticks & legend
+# plt.xticks(cone_numbers)
+# plt.legend()
+
+# # Grid (optional, matches your example)
+# plt.grid(axis="y", linestyle="--", alpha=0.5)
+
+# # Show plot
+# plt.tight_layout()
+# plt.show()
+
+
 import matplotlib.pyplot as plt
-import numpy as np
 
-# Data
-cone_numbers = np.arange(1, 7)
-deviation_x = [45, 46, 16, 11, 30, 6]
-deviation_y = [53, 64, 29, 38, 4, 10]
+# -------------------------
+# Premeasurement data (mm)
+# ------------------------
 
-# Bar settings
-bar_width = 0.35
+# -------------------------
+# Test result coordinates
+# -------------------------
+import matplotlib.pyplot as plt
 
-# Create figure
-plt.figure(figsize=(8, 5))
+# -------------------------
+# Premeasurement data (entered as y, x → swapped to x, y)
+# -------------------------
+blue_cones_raw = [
+    (-450, 1000),
+    (-450, 2250),
+    (-450, 3500)
+]
 
-# Plot bars
-plt.bar(cone_numbers - bar_width/2, deviation_x,
-        width=bar_width, label="DeviationX")
-plt.bar(cone_numbers + bar_width/2, deviation_y,
-        width=bar_width, label="DeviationY")
+yellow_cones_raw = [
+    (450, 1000),
+    (450, 2250),
+    (450, 3500)
+]
 
-# Labels and title
-plt.xlabel("Cone no.")
-plt.ylabel("Deviation (mm)")
-plt.title("Deviation X/Y")
+# Swap (y, x) → (x, y)
+blue_cones = [(x, y) for x, y in blue_cones_raw]
+yellow_cones = [(x, y) for x, y in yellow_cones_raw]
 
-# Ticks & legend
-plt.xticks(cone_numbers)
+# -------------------------
+# Test result coordinates (already x, y)
+# -------------------------
+test_results = [
+    (405.03715882983875, 947.0189543863692),
+    (-404.17162980929487, 936.506964019648),
+    (433.9788561918501, 2279.0485629706122),
+    (-439.59402771967365, 2288.155827471808),
+    (420.6423678054825, 3504.8480706596965),
+    (-456.31934705342684, 3510.4661590029227)
+]
+
+# -------------------------
+# Split coordinates
+# -------------------------
+bx, by = zip(*blue_cones)
+yx, yy = zip(*yellow_cones)
+tx, ty = zip(*test_results)
+
+# -------------------------
+# Plot
+# -------------------------
+plt.figure(figsize=(8, 6))
+
+plt.scatter(bx, by, color='blue', label='Blue Cones')
+plt.scatter(yx, yy, color='gold', label='Yellow Cones')
+plt.scatter(tx, ty, color='red', marker='x', label='Test Result')
+
+plt.xlabel('X coordinate (mm)')
+plt.ylabel('Y coordinate (mm)')
+plt.title('Measured vs Estimated Coordinates')
 plt.legend()
+plt.grid(True)
+plt.axis('equal')
+# Source - https://stackoverflow.com/a
+# Posted by jmz
+# Retrieved 2025-12-16, License - CC BY-SA 3.0
 
-# Grid (optional, matches your example)
-plt.grid(axis="y", linestyle="--", alpha=0.5)
 
-# Show plot
-plt.tight_layout()
+
+
 plt.show()
+
+# import matplotlib.pyplot as plt
+# import numpy as np
+
+# # Cone labels in correct order
+# cone_labels = [
+#     "Blue 1",
+#     "Yellow 1",
+#     "Blue 2",
+#     "Yellow 2",
+#     "Blue 3",
+#     "Yellow 3"
+# ]
+
+# # Deviations (mm) in the same order as labels
+# deviation_x = np.array([45, 46, 16, 11, 30, 6])
+# deviation_y = np.array([53, 64, 29, 38, 4, 10])
+
+# # Compute distance error
+# distance_error = np.sqrt(deviation_x**2 + deviation_y**2)
+
+# # X positions
+# x = np.arange(len(cone_labels))
+
+# # Create figure
+# plt.figure(figsize=(9, 5))
+
+# # Plot bars
+# plt.bar(x, distance_error)
+
+# # Labels and title
+# plt.xlabel("Cone")
+# plt.ylabel("Distance error (mm)")
+# plt.title("Distance from Intended Cone Position")
+
+# # Custom x-ticks
+# plt.xticks(x, cone_labels)
+
+# # Grid
+# plt.grid(axis="y", linestyle="--", alpha=0.5)
+
+# # Show plot
+# plt.tight_layout()
+# plt.show()
