@@ -61,7 +61,7 @@ def Setup():
     #manually setting the camera setings
     setCameraControl(selectedDevice, "auto_exposure",1)
     setCameraControl(selectedDevice, "exposure_time_absolute", 200)
-    setCameraControl(selectedDevice, "gain", 50)#250)
+    setCameraControl(selectedDevice, "gain", 60)#250)
     setCameraControl(selectedDevice, "focus_automatic_continuous",0)
     setCameraControl(selectedDevice, "focus_absolute", 0)
     setCameraControl(selectedDevice, "white_balance_automatic", 1)
