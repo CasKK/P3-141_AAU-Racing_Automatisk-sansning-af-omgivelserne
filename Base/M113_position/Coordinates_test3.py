@@ -299,7 +299,7 @@ def run(input_queue, output_queue, serial_queue): #
 
         while True: ##########################
             
-            wheel_circumference = 577.6 # in mm
+            wheel_circumference = 520.3 # in mm
             pulses_per_revolution = 100
             
             depth_listB = []

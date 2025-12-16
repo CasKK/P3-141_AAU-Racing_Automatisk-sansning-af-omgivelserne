@@ -74,19 +74,49 @@ def closestNP1(vectorList):########### Sort point list based on distance from (0
     return vectorList
 
 
+
 def calculateCenters(distanceListA, distanceListB):############# Canculate center points from two point lists ############
-    centers = [car]#, [0, 1600], [0, 1700]]#, [0,50], [0,100], [0,150], [0,200]] #, [0,250], [0,350], [0,300], [0,25], [0,75], [0,125], [0,175], [0,225], [0,275], [0,325], [0,375]
-    #centers.append([0,0], [0,100])
+    centers = []
+    
+    lenA = len(distanceListA)
+    lenB = len(distanceListB)
+    
     for i, (vecA, vecB) in enumerate(zip(distanceListA, distanceListB)):
-        centers.append([(vecA[0] + vecB[0]) / 2 , (vecA[1] + vecB[1]) / 2])
-        if i < len(distanceListA) - 1 and i < len(distanceListB) - 1:
+        centers.append([(vecA[0] + vecB[0]) / 2, (vecA[1] + vecB[1]) / 2])
+        if i < lenA - 1 and i < lenB - 1:
             next_vecA = distanceListA[i + 1]
             next_vecB = distanceListB[i + 1]
             centers.append([((next_vecA[0] + vecB[0]) / 2 + ((next_vecB[0] + vecA[0]) / 2)) / 2, ((next_vecA[1] + vecB[1]) / 2 + (next_vecB[1] + vecA[1]) / 2) / 2])
+    
+    if lenA != lenB and min(lenA, lenB) > 0:
+        if lenA > lenB:
+            last = distanceListB[-1]
+            extra_points = distanceListA[lenB:]
+        else:
+            last = distanceListA[-1]
+            extra_points = distanceListB[lenA:]
+        for p in extra_points:
+            x = (last[0] + p[0]) / 2
+            y = (last[1] + p[1]) / 2
+            centers.append([x, y])
+    
+    lenC = len(centers)
+    for i in range(lenC):
+        if i < lenC - 1:
+            next_cen = centers[i + 1]
+            x = (next_cen[0] + centers[i][0]) / 2
+            y = (next_cen[1] + centers[i][1]) / 2
+            centers.append([x, y])
+
     for i, center in enumerate(centers):
         centers[i].append(np.sqrt(center[0]**2 + center[1]**2))
-    centers = np.array(sorted(centers, key=lambda x: x[-2]))
-    # print(centers)
+    centers = np.array(sorted(centers, key=lambda x: x[-1]))
+    _, idx = np.unique(centers, axis=0, return_index=True)
+    centers = centers[np.sort(idx)]
+
+    if len(centers) < 6:
+        centers = np.array([car.copy(), [0, 1600], [0, 1700], [0, 1800], [0, 1900], [0, 2000]])
+    
     return centers
 
 
@@ -196,12 +226,15 @@ fig.update_layout(
 )
 fig.show()
 
-plt.figure(figsize=(8,8))
-plt.scatter(distanceSortedPointsY[:, 0], distanceSortedPointsY[:, 1], c='yellow', edgecolor='black', label='distanceListA')
-plt.scatter(distanceSortedPointsB[:, 0], distanceSortedPointsB[:, 1], c='blue', edgecolor='black', label='distanceListB')
-plt.scatter(centers[:,0], centers[:,1], color='red', label="Original waypoints")
+fig, ax = plt.subplots()
+fig.set_size_inches(8, 8)
+ax.set_xlabel("x-coordinate (mm)")
+ax.set_ylabel("y-coordinate (mm)")
+ax.scatter(distanceSortedPointsY[:, 0], distanceSortedPointsY[:, 1], c='yellow', edgecolor='black', label='distanceListA')
+ax.scatter(distanceSortedPointsB[:, 0], distanceSortedPointsB[:, 1], c='blue', edgecolor='black', label='distanceListB')
+ax.scatter(centers[:,0], centers[:,1], color='red', label="Original waypoints")
 #plt.scatter(x_smooth, y_smooth, color='red', label="smooth waypoints")
-plt.plot(x_smooth, y_smooth, label="Smoothed B-spline fit", linewidth=2)
+ax.plot(x_smooth, y_smooth, label="Smoothed B-spline fit", linewidth=2)
 #plt.quiver(x_smooth[temp], y_smooth[temp], direction[0, temp] / 10, direction[1, temp] / 10, angles='xy', scale_units='xy', scale=1, color='green', label='Vector')
 #plt.quiver(x_smooth[temp], y_smooth[temp], direction1[0, temp] / 10, direction1[1, temp] / 10, angles='xy', scale_units='xy', scale=1, color='green', label='Vector')
 
@@ -218,14 +251,14 @@ for i in idx:
     wx =  np.cos(delta)*tx - np.sin(delta)*ty
     wy =  np.sin(delta)*tx + np.cos(delta)*ty
 
-    plt.arrow(x_smooth[i],
+    ax.arrow(x_smooth[i],
               y_smooth[i],
               wx * arrow_scale,
               wy * arrow_scale,
               head_width=40,
               color="green")
 
-plt.axis('equal')
+ax.axis('equal')
 #plt.legend()
 #plt.title("Smoothed racing line fit (B-spline with smoothing)")
 plt.show()
