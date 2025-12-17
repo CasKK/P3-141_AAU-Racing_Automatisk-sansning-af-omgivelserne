@@ -128,18 +128,19 @@ tDistance = 800  # mm
 
 def main():
     start = time.time()
-    global distanceSortedPointsB, distanceSortedPointsY
-    distanceSortedPointsB = closest(inputVectorsB)
-    distanceSortedPointsY = closest(inputVectorsY)
+    for i in range(100):
+        global distanceSortedPointsB, distanceSortedPointsY
+        distanceSortedPointsB = closest(inputVectorsB)
+        distanceSortedPointsY = closest(inputVectorsY)
 
-    global centers
-    centers = calculateCenters(distanceSortedPointsB, distanceSortedPointsY)
+        global centers
+        centers = calculateCenters(distanceSortedPointsB, distanceSortedPointsY)
 
-    global s, x_smooth, y_smooth
-    s, x_smooth, y_smooth = BSpline(centers, 20000, 5)
-    global steer_now, targetX, targetY
-    targetX, targetY = targetPoint(x_smooth, y_smooth)
-    steer_now = steeringAngle(targetX, targetY)
+        global s, x_smooth, y_smooth
+        s, x_smooth, y_smooth = BSpline(centers, 20000, 5)
+        global steer_now, targetX, targetY
+        targetX, targetY = targetPoint(x_smooth, y_smooth)
+        steer_now = steeringAngle(targetX, targetY)
     end = time.time()
     print(f"M121 execution time: {end - start} seconds")
     print(f"steer_now (radians): {steer_now}")

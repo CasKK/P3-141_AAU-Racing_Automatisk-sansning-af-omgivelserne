@@ -265,25 +265,26 @@ Then the old and new points are matched."""
 
 def main():
     start = time.time()
-    global lastAngle
-    global lastDistance
+    for i in range(100):
+        global lastAngle
+        global lastDistance
 
-    rotatePointsAroundPoint(oldPointsB, car, angle - lastAngle)
-    rotatePointsAroundPoint(oldPointsY, car, angle - lastAngle)
-    lastAngle = angle
+        rotatePointsAroundPoint(oldPointsB, car, angle - lastAngle)
+        rotatePointsAroundPoint(oldPointsY, car, angle - lastAngle)
+        lastAngle = angle
 
-    movePoints1(oldPointsB, oldPointsY, distance - lastDistance)
-    lastDistance = distance
+        movePoints1(oldPointsB, oldPointsY, distance - lastDistance)
+        lastDistance = distance
 
-    newPointsB = one_frame_cone_positions(coordinates_listB, depth_listB, fov, image_width, image_height)
-    newPointsY = one_frame_cone_positions(coordinates_listY, depth_listY, fov, image_width, image_height)
+        newPointsB = one_frame_cone_positions(coordinates_listB, depth_listB, fov, image_width, image_height)
+        newPointsY = one_frame_cone_positions(coordinates_listY, depth_listY, fov, image_width, image_height)
 
-    matchPoints(newPointsB, oldPointsB)
-    matchPoints(newPointsY, oldPointsY)
-    # Export 'oldPoints' to use later in pipeline (M121)
-    roundPoints(oldPointsB)
-    roundPoints(oldPointsY)
-    # print(f"OutFromM113: {oldPoints}")
+        matchPoints(newPointsB, oldPointsB)
+        matchPoints(newPointsY, oldPointsY)
+        # Export 'oldPoints' to use later in pipeline (M121)
+        roundPoints(oldPointsB)
+        roundPoints(oldPointsY)
+        # print(f"OutFromM113: {oldPoints}")
     end = time.time()
     print(f"M113 execution time: {end - start} seconds")
     print(f"M113 oldPointsB: {oldPointsB}")
