@@ -31,7 +31,7 @@ unsigned long time;
 bool newData = false;
 float wheelAngle;
 float wheelAngleTemp;
-float desiredSpeed = 0.625f;  // m/s
+float desiredSpeed = 1f;  // m/s
 unsigned long lastTime = 0;
 ICM20600 icm20600(true);
 
