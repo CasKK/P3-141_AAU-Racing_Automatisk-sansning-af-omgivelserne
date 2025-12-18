@@ -104,14 +104,14 @@ def targetPoint(listA, listB): # Find the target point at a set distance ahead a
         if s >= tDistance:  # If we have traveled more than the distance we want to travel,
             uL = i          # we save the index of that point
             break           # and break the loop.
-    xL = listA[uL] - car[0] # That point is then returned to be the target point.
-    yL = listB[uL] - car[1]
-    return xL, yL
+    xT = listA[uL] - car[0] # That point is then returned to be the target point.
+    yT = listB[uL] - car[1] # From the perspective of the car.
+    return xT, yT
 
 def steeringAngle(x, y): # Calculate steering angle based on target point
-    alpha = np.arctan2(x, y)
+    alpha = np.arctan2(x, y) # Pure persuit algorithm
     Ld = np.hypot(x, y)
-    delta = np.arctan2(2 * L * np.sin(alpha), Ld)
+    delta = np.arctan2(2 * L * np.sin(alpha), Ld) # Along with bicycle steering
     return delta
 
 
