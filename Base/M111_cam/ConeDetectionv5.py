@@ -55,7 +55,7 @@ def Setup():
 
     print("bruger kamera:", selectedDevice)
     
-    # Læs gain i auto mode
+    # Read gain in auto mode
     auto_gain = getCameraControl(selectedDevice, "gain")
 
     #manually setting the camera setings
@@ -84,6 +84,7 @@ def Setup():
     
     return cam, upperLimitBlue, lowerLimitBlue, upperLimitYellow, lowerLimitYellow, bayesValues
 
+# The WarpFrame function is where the images is being warped
 def WarpFrame(frame, depth):
 
     
@@ -92,7 +93,7 @@ def WarpFrame(frame, depth):
                           [-1.13793182e-04, -9.33131759e-05,  1.00000000e+00]])
     
 
-    #warp billede2 på billede1
+    #warp img2 onto img1
     height, width = depth.shape[:2]
     warpedFrame = cv2.warpPerspective(frame, matrix, (width, height))
     # cv2.imwrite("WarpedImg2.png", warped_img2)
@@ -133,7 +134,7 @@ def FindContours(maskBlue, maskYellow):
     bboxYellow = []
 
     def FilterBbox(contours, bbox):
-        #Gennemgår alle konturer fundet i et maskeret billede
+        #Going through all contours found in the masked frame
         for c in contours:
 
             def CheckFeatures(c):
@@ -198,7 +199,7 @@ def FindContours(maskBlue, maskYellow):
     
     return bboxBlue, bboxYellow
 
-
+# The Edgedetection function is where all the edges are detected and combined
 def EdgeDetection(HSV):
 
     def Morphology(combine):
@@ -243,7 +244,8 @@ def EdgeDetection(HSV):
     edgeContours, _ = cv2.findContours(combine, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
 
     return combine, edgeContours
-
+    
+# The VerifyConesWithEdges function is where the edges are being verified with the bboxes
 def VerifyConesWithEdges(bboxes, edges, threshold):
     verified = [] #Listing for the bboxes, that is being verified as valid 
     
@@ -266,6 +268,7 @@ def VerifyConesWithEdges(bboxes, edges, threshold):
 
     return verified
 
+# The ShapeClassification function classfies BLOBs bu shape
 def ShapeClassification(bayesValues, bbox):
 
     def gaussianLogProb(x, mu, var):
@@ -333,7 +336,7 @@ def CompareWithHelios(contours, frame, depth):
 
             scaledContour, cx, cy = Scale(c, x, y, w, h, 0.2)
 
-            # Lav en maske ud fra den skalerede kontur
+            # Make a mask fomr the scaled contour
             mask = np.zeros_like(frame[:, :, 0])
             cv2.drawContours(mask, [scaledContour], -1, 255, thickness=cv2.FILLED)  # fyld konturen
 
@@ -483,6 +486,7 @@ def DrawBoundingBox(box, frame, color, depth):
         cv2.rectangle(frame, p1, p2, frameColor, 2, 1)
         cv2.putText(frame, label, (p1[0], p1[1]-5), cv2.FONT_HERSHEY_COMPLEX, 0.7, frameColor, 2, cv2.LINE_AA)
 
+#This function find the distances to the cones
 def DistToCenter (conesBlue1, conesBlue2, conesYellow1, conesYellow2, depth):
     blueArray, yellowArray, combinedArray = [], [], []
     
@@ -656,4 +660,5 @@ def run(output_queue):
 
 # if __name__ == "__main__":
 #     main()
+
     
