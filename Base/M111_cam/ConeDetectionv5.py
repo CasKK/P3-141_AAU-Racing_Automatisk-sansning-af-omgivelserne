@@ -12,28 +12,28 @@ debug = False
 
 frame_width = 640
 frame_height = 480
-fourcc = cv2.VideoWriter_fourcc(*"MJPG")
-out = cv2.VideoWriter(f"output_{time.time()}.avi", fourcc, 15.0, (frame_width, frame_height))
+fourcc = cv2.VideoWriter_fourcc(*"MJPG") # Define the codec for video writing
+out = cv2.VideoWriter(f"output_{time.time()}.avi", fourcc, 15.0, (frame_width, frame_height)) # Video writer object
 
 camera_lock = threading.Lock()
 # The setup function is where the camera is inititiated and the limits for color segmentation is defined in HSV
-def Setup():
-    def getCameraControl(device, name):
+def Setup(): # Setup function for camera and color limits
+    def getCameraControl(device, name): # Function to get camera control value
         result = subprocess.run(
             ["v4l2-ctl", f"--device={device}", "--get-ctrl", name],
             capture_output=True, text=True
         )
         return result.stdout.strip()
 
-    def setCameraControl(device, control, value):
+    def setCameraControl(device, control, value): # Function to set camera control value
         cmd = ["v4l2-ctl", f"--device={device}", "--set-ctrl", f"{control}={value}"]
         subprocess.run(cmd, check=True)
 
-    videoDevices = sorted(glob.glob("/dev/video*"))
+    videoDevices = sorted(glob.glob("/dev/video*")) # Find all video devices
     cam = None
     selectedDevice = None
 
-    for dev in videoDevices:
+    for dev in videoDevices: # Try to open each video device
         index = int(dev.replace("/dev/video", ""))
         print(f"Prøver {dev} ...")
         
@@ -49,7 +49,7 @@ def Setup():
         else:
             cap.release()
 
-    if not cam:
+    if not cam: # Exit if no camera is found
         print("Ingen kamera fundet")
         exit(1)
 
@@ -58,7 +58,7 @@ def Setup():
     # Read gain in auto mode
     auto_gain = getCameraControl(selectedDevice, "gain")
 
-    #manually setting the camera setings
+    # manually setting the camera setings
     setCameraControl(selectedDevice, "auto_exposure",1)
     setCameraControl(selectedDevice, "exposure_time_absolute", 200)
     setCameraControl(selectedDevice, "gain", 60)#250)
@@ -84,9 +84,8 @@ def Setup():
     
     return cam, upperLimitBlue, lowerLimitBlue, upperLimitYellow, lowerLimitYellow, bayesValues
 
-# The WarpFrame function is where the images is being warped
-def WarpFrame(frame, depth):
-
+def WarpFrame(frame, depth): # Function to warp frame based on depth image matrix
+    # Define the perspective transformation matrix based on calibration
     
     matrix = np.array([[ 8.43114000e-01, -3.84176124e-02,  2.83616563e+01],
                         [-2.15365538e-02,  8.45311445e-01,  4.68435043e+01],
@@ -305,7 +304,7 @@ def ShapeClassification(bayesValues, bbox):
 
 
 
-def CompareWithHelios(contours, frame, depth):   
+def CompareWithHelios(contours, frame, depth): 
     '''
     Function to check if a BLOB is seperated by distance and therefore should be to different objekts.
     '''
@@ -414,7 +413,7 @@ def CompareWithHelios(contours, frame, depth):
 # MergeCenters then filters through these centers and checks if two centers are within the predefined pixel distance
 # if they are a new center is calculated as the average of both ccenters, and a new bbox is defined.
 
-def MergeBbox(bboxBlue, bboxYellow):
+def MergeBbox(bboxBlue, bboxYellow): # Function to merge bboxes that are close to each other
     def CenterCalc(bbox, centrum):
         for b in bbox:
             x,y,w,h,diameter,depth, a = b
@@ -462,7 +461,7 @@ def MergeBbox(bboxBlue, bboxYellow):
     return mergedBlueCorner, mergedYellowCorner, mergedBlue, mergedYellow, mergedCenterBlue, mergedCenterYellow
 
 # This function draws the bounding boxes
-def DrawBoundingBox(box, frame, color, depth):
+def DrawBoundingBox(box, frame, color, depth): # Function to draw bounding boxes on the frame
     x, y, w, h, d, _ = box
     p1 = (int(x), int(y))
     p2 = (int(x+w), int(y+h))

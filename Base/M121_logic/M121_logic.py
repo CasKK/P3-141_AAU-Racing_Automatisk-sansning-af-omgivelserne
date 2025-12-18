@@ -10,7 +10,7 @@ import csv
 
 def closest(vectorList):########### Sort point list based on distance from (0,0) (Simple) ############
     vectorList = copy.deepcopy(vectorList)
-    for i, vector in enumerate(vectorList):
+    for i, vector in enumerate(vectorList): #
         result = np.sqrt(vector[0]**2 + vector[1]**2)
         if i < len(vectorList)-1:
             nextVector = vectorList[i+1]
@@ -27,14 +27,14 @@ def calculateCenters(distanceListA, distanceListB):############# Canculate cente
     lenA = len(distanceListA)
     lenB = len(distanceListB)
     
-    for i, (vecA, vecB) in enumerate(zip(distanceListA, distanceListB)):
+    for i, (vecA, vecB) in enumerate(zip(distanceListA, distanceListB)): # determine midpoints between the two lists
         centers.append([(vecA[0] + vecB[0]) / 2, (vecA[1] + vecB[1]) / 2])
         if i < lenA - 1 and i < lenB - 1:
             next_vecA = distanceListA[i + 1]
             next_vecB = distanceListB[i + 1]
             centers.append([((next_vecA[0] + vecB[0]) / 2 + ((next_vecB[0] + vecA[0]) / 2)) / 2, ((next_vecA[1] + vecB[1]) / 2 + (next_vecB[1] + vecA[1]) / 2) / 2])
     
-    if lenA != lenB and min(lenA, lenB) > 0:
+    if lenA != lenB and min(lenA, lenB) > 0: # Handle case where lists are of unequal length
         if lenA > lenB:
             last = distanceListB[-1]
             extra_points = distanceListA[lenB:]
@@ -47,14 +47,14 @@ def calculateCenters(distanceListA, distanceListB):############# Canculate cente
             centers.append([x, y])
     
     lenC = len(centers)
-    for i in range(lenC):
+    for i in range(lenC): # Interpolate additional points if less than 6 centers found
         if i < lenC - 1:
             next_cen = centers[i + 1]
             x = (next_cen[0] + centers[i][0]) / 2
             y = (next_cen[1] + centers[i][1]) / 2
             centers.append([x, y])
 
-    for i, center in enumerate(centers):
+    for i, center in enumerate(centers): # Remove duplicates based on distance from car
         centers[i].append(np.sqrt(center[0]**2 + center[1]**2))
     centers = np.array(sorted(centers, key=lambda x: x[-1]))
     _, idx = np.unique(centers, axis=0, return_index=True)
@@ -87,7 +87,7 @@ def BSpline(points, smoothing, k):########### Make and fit Basis-spline ########
     v_max = np.clip(v_max, 0, 80)
     return v_max, x_u, y_u
 
-def targetPoint(listA, listB): # Find the   
+def targetPoint(listA, listB): # Find the target point at a set distance ahead along the spline
     newList = []
     for i, (x, y) in enumerate(zip(listA, listB)):
         nextDist = np.sqrt((x - car[0])**2 + (y - car[1])**2)
@@ -109,7 +109,7 @@ def targetPoint(listA, listB): # Find the
 
     return xL, yL
 
-def steeringAngle(x, y):
+def steeringAngle(x, y): # Calculate steering angle based on target point
     alpha = np.arctan2(x, y)
     Ld = np.hypot(x, y)
     delta = np.arctan2(2 * L * np.sin(alpha), Ld)
@@ -126,24 +126,25 @@ tDistance = 800  # mm
 
 ############## Program ##################
 
-def main():
+def main(): # Main processing function
     global distanceSortedPointsB, distanceSortedPointsY
-    distanceSortedPointsB = closest(inputVectorsB)
-    distanceSortedPointsY = closest(inputVectorsY)
+    distanceSortedPointsB = closest(inputVectorsB) # Sort blue points by distance from 0,0
+    distanceSortedPointsY = closest(inputVectorsY) # Sort yellow points by distance from 0,0
 
     global centers
-    centers = calculateCenters(distanceSortedPointsB, distanceSortedPointsY)
+    centers = calculateCenters(distanceSortedPointsB, distanceSortedPointsY) # Calculate center points between blue and yellow points
 
     global s, x_smooth, y_smooth
-    s, x_smooth, y_smooth = BSpline(centers, 20000, 5)
+    s, x_smooth, y_smooth = BSpline(centers, 20000, 5) # Fit B-spline to center points
     global steer_now, targetX, targetY
-    targetX, targetY = targetPoint(x_smooth, y_smooth)
-    steer_now = steeringAngle(targetX, targetY)
+    targetX, targetY = targetPoint(x_smooth, y_smooth) # Find target point along the spline
+    steer_now = steeringAngle(targetX, targetY) # Calculate steering angle to target point
 
-def run(input_queue, serial_queue):
+def run(input_queue, serial_queue): # Run function for m121
     time.sleep(0.5)
     global inputVectorsB, inputVectorsY
-    main()
+    main() # Initial run to setup spline
+    # Visualization setup
     # plt.ion()
     # fig, ax = plt.subplots()
     # fig.set_size_inches(8, 8)
@@ -176,22 +177,22 @@ def run(input_queue, serial_queue):
     
     # plt.show(block=False)
     # plt.pause(0.01)
-    with open("m121log", "a", newline="") as f:
+    with open("m121log", "a", newline="") as f: # Open the m121 log file for appending
         writer = csv.writer(f)
         while True:
             
-            inputVectorsB, inputVectorsY = input_queue.get()
-            main()
+            inputVectorsB, inputVectorsY = input_queue.get() # Get new points from m113
+            main() # Run main processing function
 
-            steer_deg = np.degrees(-steer_now)
-            steer_deg = np.clip(steer_deg, -90, 90)
-            if serial_queue.qsize() >= 5:
+            steer_deg = np.degrees(-steer_now) # Convert steering angle to degrees and invert
+            steer_deg = np.clip(steer_deg, -90, 90) # Clip steering angle to valid range
+            if serial_queue.qsize() >= 5: # limit queue size to prevent serial manager falling behind
                 try:
                     serial_queue.get_nowait()  # remove oldest item
                 except:
                     pass
             steer_deg = steer_deg + 90
-            serial_queue.put(int(steer_deg))
+            serial_queue.put(int(steer_deg)) # Send steering command to serial manager
             print(f"steer_deg: {steer_deg}")
 
             #Log

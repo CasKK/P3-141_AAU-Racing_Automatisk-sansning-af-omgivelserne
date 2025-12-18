@@ -7,17 +7,18 @@ import serial_manager
 
 if __name__ == "__main__":
 
-    q_m111_to_m113 = Queue()
-    q_m113_to_m121 = Queue()
-    q_serial_read = Queue() # Serial que til modtagelse "kun på m113"
-    q_serial_write = Queue() # Serial que til afsendelse "kun på m121"
+    q_m111_to_m113 = Queue() # Input queue from image processing to position processing
+    q_m113_to_m121 = Queue() # Output queue from position processing to logic processing
+    q_serial_read = Queue() # Serial que for reading "only on m113"
+    q_serial_write = Queue() # Serial que for transmitting "only on m121"
     
-    m111 = Process(target=ConeDetectionv5.run, args=(q_m111_to_m113,))
-    m113 = Process(target=Coordinates_test3.run, args=(q_m111_to_m113, q_m113_to_m121, q_serial_read)) #
-    m121 = Process(target=M121_logic.run, args=(q_m113_to_m121, q_serial_write)) #
-    serial = Process(target=serial_manager.run, args=(q_serial_read, q_serial_write))
+    m111 = Process(target=ConeDetectionv5.run, args=(q_m111_to_m113,)) # Setup image processing
+    m113 = Process(target=Coordinates_test3.run, args=(q_m111_to_m113, q_m113_to_m121, q_serial_read)) # Setup position processing
+    m121 = Process(target=M121_logic.run, args=(q_m113_to_m121, q_serial_write)) # Setup logic processing
+    serial = Process(target=serial_manager.run, args=(q_serial_read, q_serial_write)) # Setup the serial manager
 
-    m111.start()
+    #Start all processes
+    m111.start() 
     m113.start()
     m121.start()
     serial.start()

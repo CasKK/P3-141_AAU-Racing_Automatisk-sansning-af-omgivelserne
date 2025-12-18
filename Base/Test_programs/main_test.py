@@ -1,9 +1,9 @@
 from multiprocessing import Process, Queue
 import time
 # from M111_cam import ConeDetectionv3
-from M113_position import Coordinates_test2
-from M121_logic import M121_logic_test
-import serial_manager_test
+from Base.M113_position.M113_TestPrograms import Coordinates_test2
+from Base.M121_logic.M121_TestPrograms import M121_logic_test
+import Base.Test_programs.serial_manager_test as serial_manager_test
 
 if __name__ == "__main__":
 

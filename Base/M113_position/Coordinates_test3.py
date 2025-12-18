@@ -270,60 +270,59 @@ def main():
     global lastAngle
     global lastDistance
 
-    rotatePointsAroundPoint(oldPointsB, car, angle - lastAngle)
-    rotatePointsAroundPoint(oldPointsY, car, angle - lastAngle)
-    lastAngle = angle
+    rotatePointsAroundPoint(oldPointsB, car, angle - lastAngle) # Rotate old blue points based gyro feedback
+    rotatePointsAroundPoint(oldPointsY, car, angle - lastAngle) # Rotate old yellow points based on gyro feedback
+    lastAngle = angle   # Update last angle
 
-    movePoints1(oldPointsB, oldPointsY, distance - lastDistance)
-    lastDistance = distance
+    movePoints1(oldPointsB, oldPointsY, distance - lastDistance) # Move old points based on encoder feedback
+    lastDistance = distance 
 
-    newPointsB = one_frame_cone_positions(coordinates_listB, depth_listB, fov, image_width, image_height)
-    newPointsY = one_frame_cone_positions(coordinates_listY, depth_listY, fov, image_width, image_height)
+    newPointsB = one_frame_cone_positions(coordinates_listB, depth_listB, fov, image_width, image_height) # Get new blue cone positions
+    newPointsY = one_frame_cone_positions(coordinates_listY, depth_listY, fov, image_width, image_height) # Get new yellow cone positions
 
-    matchPoints(newPointsB, oldPointsB)
-    matchPoints(newPointsY, oldPointsY)
+    matchPoints(newPointsB, oldPointsB) # Match new blue points to old blue points
+    matchPoints(newPointsY, oldPointsY) # Match new yellow points to old yellow points
     # Export 'oldPoints' to use later in pipeline (M121)
-    roundPoints(oldPointsB)
-    roundPoints(oldPointsY)
+    roundPoints(oldPointsB) # Round points for easier handling
+    roundPoints(oldPointsY) # Round points for easier handling
     # print(f"OutFromM113: {oldPoints}")
 
 
 ######### run ###########
 
-def run(input_queue, output_queue, serial_queue): #
+def run(input_queue, output_queue, serial_queue): # Run function for m113
     global coordinates_listB, coordinates_listY, depth_listB, depth_listY, angle, distance
-    main()
+    main() # Initial run to setup oldPoints
 
-    with open("m113log", "a", newline="") as f:
+    with open("m113log", "a", newline="") as f: # Open the m113 log file for appending
         writer = csv.writer(f)
 
-        while True: ##########################
+        while True: # Main loop
             
             wheel_circumference = 520.3 # in mm
-            pulses_per_revolution = 100
+            pulses_per_revolution = 100 # encoder pulses per wheel revolution
             
-            depth_listB = []
-            depth_listY = []
-            coordinates_listB, coordinates_listY = input_queue.get()
-            print(f"M113 ahaha --- {time.time()}")
-            depth_listB = [p[2] for p in coordinates_listB]
-            depth_listY = [p[2] for p in coordinates_listY]
+            depth_listB = [] # initialize helios depth list for blue cones
+            depth_listY = [] # initialize helios depth list for yellow cones
+            coordinates_listB, coordinates_listY = input_queue.get() # get new coordinates from m111
+            depth_listB = [p[2] for p in coordinates_listB] # extract depth values for blue cones
+            depth_listY = [p[2] for p in coordinates_listY] # extract depth values for yellow cones
 
-            while not serial_queue.empty():
-                angle, encoder = serial_queue.get()
+            while not serial_queue.empty(): # get all available serial data
+                angle, encoder = serial_queue.get() # get angle and encoder values
                 distance = encoder * wheel_circumference / pulses_per_revolution
                 print("Angle:", angle, "   distance:", distance)
                 angle = math.radians(angle)
             
-            main()
+            main() # Run main processing function
             # Enforce max queue length of 5
-            if output_queue.qsize() >= 5:
+            if output_queue.qsize() >= 5: # limit queue size to prevent m121 falling behind
                 try:
                     output_queue.get_nowait()  # remove oldest item
                 except:
                     pass
 
-            output_queue.put((oldPointsB, oldPointsY))
+            output_queue.put((oldPointsB, oldPointsY)) # send updated points to m121
 
             #Log
             timestamp = time.time()
