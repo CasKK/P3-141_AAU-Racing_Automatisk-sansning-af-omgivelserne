@@ -251,17 +251,21 @@ def VerifyConesWithEdges(bboxes, edges, threshold):
     _, edgesBin = cv2.threshold(edges, 1, 255, cv2.THRESH_BINARY)
 
     for box in bboxes:
-        #Converting bounding box coordinates to a integer
+        
         c, _, _, _, _, _, _, _ = box
 
+        # Create a mask of the contour with a width of 4 pixel
         maskEdge = np.zeros_like(edgesBin)
         cv2.drawContours(maskEdge, [c], -1, (255), 4)
         
+        # Combine mask so it is the overlapping pixel
         overlap = cv2.bitwise_and(maskEdge, edgesBin)
 
+        # Count the edgepixel and overlapping pixel
         edgePixels = cv2.countNonZero(maskEdge)
         overlapPixels = cv2.countNonZero(overlap)
 
+        # Append if the overlap is above a threshold
         if edgePixels > 0 and (overlapPixels / edgePixels >= threshold):
             verified.append(box)
 
@@ -270,15 +274,18 @@ def VerifyConesWithEdges(bboxes, edges, threshold):
 # The ShapeClassification function classfies BLOBs bu shape
 def ShapeClassification(bayesValues, bbox):
 
+    # Gaussian equation
     def gaussianLogProb(x, mu, var):
         return -0.5*math.log(2*math.pi*var) - ((x-mu)**2)/(2*var)
 
+    # Bayes equation
     def classLogScore(x, mu, var, prior):
         log_probs = [gaussianLogProb(xi, mui, vari) for xi, mui, vari in zip(x, mu, var)]
         return sum(log_probs) + math.log(prior)
     
     classified = []
 
+    
     for b in bbox:
         c, x, y, w, h, d, features, a = b
 
@@ -287,11 +294,13 @@ def ShapeClassification(bayesValues, bbox):
         priorMix1 = 0.05
         priorMix2 = 0.1
 
+        # Calculate the logaritmic score for each type
         logTop = classLogScore(features, bayesValues["topMean"], bayesValues["topVar"], priorTop)
         logBottom = classLogScore(features, bayesValues["bottomMean"], bayesValues["bottomVar"], priorBottom)
         logMix1 = classLogScore(features, bayesValues["mix1Mean"], bayesValues["mix1Var"], priorMix1)
         logMix2 = classLogScore(features, bayesValues["mix2Mean"], bayesValues["mix2Var"], priorMix2)
 
+        # Chose the mast likeli
         compare = {
             0: logTop, 1: logBottom, 2: logMix1, 3: logMix2
         }
@@ -305,15 +314,12 @@ def ShapeClassification(bayesValues, bbox):
 
 
 def CompareWithHelios(contours, frame, depth): 
-    '''
-    Function to check if a BLOB is seperated by distance and therefore should be to different objekts.
-    '''
 
+    # Function to scale contour
     def Scale(contour, x, y, w, h, scale):
         cx = x + w / 2
         cy = y + h / 2
 
-        #   https://nvsabhilash.me/2019/06/29/Scaling-and-Rotating-contours.html?utm_source=chatgpt.com
         scaledContour = contour.copy().astype(np.float32)
         scaledContour[:, 0, 0] = cx + (scaledContour[:, 0, 0] - cx) * scale
         scaledContour[:, 0, 1] = cy + (scaledContour[:, 0, 1] - cy) * scale
@@ -416,14 +422,14 @@ def CompareWithHelios(contours, frame, depth):
 def MergeBbox(bboxBlue, bboxYellow): # Function to merge bboxes that are close to each other
     def CenterCalc(bbox, centrum):
         for b in bbox:
-            x,y,w,h,diameter,depth, a = b
+            x,y,w,h,diagonal,depth, a = b
             cx = x+w/2
             cy = y+h/2
-            centrum.append((cx, cy, w, h, x, y, diameter, depth, a))
+            centrum.append((cx, cy, w, h, x, y, diagonal, depth, a))
     def MergeCenters(centrum, merged, mergedCorner, mergedCenter):
         centrum.sort(key=lambda c: c[7])
         for c in centrum: # go through each item in the list of center locations
-            cxC, cyC, wC, hC, xC, yC, diameterC, depthC, aC = c
+            cxC, cyC, wC, hC, xC, yC, diagonalC, depthC, aC = c
             found = False # Found is false at the start since the first center is not close to any of the others since there is none to compare to
             for i, m in enumerate(merged): # For each iteration i, and m in enumerate(merged) i is the iteration and m is the corresponding entry in merged
                 cxM, cyM, wM, hM, depthM, aM = m
@@ -433,7 +439,7 @@ def MergeBbox(bboxBlue, bboxYellow): # Function to merge bboxes that are close t
                     a = aM
                 else:
                     a = aM
-                if (abs(cyC-cyM) < diameterC*6) and (abs(cxC-cxM) < diameterC*1.5) and (abs(depthC-depthM) < 700): # Checks to see if the center c is close enough to the entry m
+                if (abs(cyC-cyM) < diagonalC*6) and (abs(cxC-cxM) < diagonalC*1.5) and (abs(depthC-depthM) < 700): # Checks to see if the center c is close enough to the entry m
                     merged[i] = ((cxC+cxM)/2, (cyC+cyM)/2, abs(cyC-cyM)*1.5, abs(cxC-cxM)*3, abs((depthC+depthM)/2), a) # If it is close enough a new center is calculated
                     x1 = min(cxC-wC/2, cxM-wM/2) # The minimum and maximum values for the new center is created
                     y1 = min(cyC-hC/2, cyM-hM/2)
@@ -485,8 +491,8 @@ def DrawBoundingBox(box, frame, color, depth): # Function to draw bounding boxes
         cv2.rectangle(frame, p1, p2, frameColor, 2, 1)
         cv2.putText(frame, label, (p1[0], p1[1]-5), cv2.FONT_HERSHEY_COMPLEX, 0.7, frameColor, 2, cv2.LINE_AA)
 
-#This function find the distances to the cones
-def DistToCenter (conesBlue1, conesBlue2, conesYellow1, conesYellow2, depth):
+# Function to pack the calculated values to the next module
+def PackToNextModule (conesBlue1, conesBlue2, conesYellow1, conesYellow2, depth):
     blueArray, yellowArray, combinedArray = [], [], []
     
     def CalcZ(cones1, cones2, array, combined):
@@ -600,7 +606,7 @@ def run(output_queue):
         # Convert the result back to uint8 (for display or saving)
         blended = np.uint8(blended_float)
 
-        positions = DistToCenter(centerPointsBlue, mixBlue, centerPointsYellow, mixYellow, depth)
+        positions = PackToNextModule(centerPointsBlue, mixBlue, centerPointsYellow, mixYellow, depth)
         print(f"ConePos: {positions}")
 
 
