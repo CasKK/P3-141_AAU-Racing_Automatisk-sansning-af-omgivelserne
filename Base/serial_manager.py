@@ -33,7 +33,7 @@ def run(read_queue, write_queue): #Run Function for Serial Manager
                             read_queue.put((angle, count)) # Put parsed data into read queue
                             print("Angle:", angle, "Count:", count)
                             timestamp = time.time()
-                            writer.writerow([timestamp, angle, count])
+                            writer.writerow([timestamp, angle, count]) # Log the serial input for debug.
                             f.flush()
                     except ValueError:
                         print("Bad line:", line)

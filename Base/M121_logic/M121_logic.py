@@ -47,20 +47,20 @@ def calculateCenters(distanceListA, distanceListB):############# Canculate cente
             centers.append([x, y])
     
     lenC = len(centers)
-    for i in range(lenC): # Interpolate additional points if less than 6 centers found
-        if i < lenC - 1:
+    for i in range(lenC):   # Make additional center points between existing center points.
+        if i < lenC - 1:    # This is to be able to make a b-spline from less cones (current B-spline need >5 points).
             next_cen = centers[i + 1]
             x = (next_cen[0] + centers[i][0]) / 2
             y = (next_cen[1] + centers[i][1]) / 2
             centers.append([x, y])
 
-    for i, center in enumerate(centers): # Remove duplicates based on distance from car
-        centers[i].append(np.sqrt(center[0]**2 + center[1]**2))
-    centers = np.array(sorted(centers, key=lambda x: x[-1]))
-    _, idx = np.unique(centers, axis=0, return_index=True)
+    for i, center in enumerate(centers):                        
+        centers[i].append(np.sqrt(center[0]**2 + center[1]**2)) # Sort points based on distance from car
+    centers = np.array(sorted(centers, key=lambda x: x[-1]))    # Point orders matter when making a B-spline
+    _, idx = np.unique(centers, axis=0, return_index=True)      # Delete duplicates
     centers = centers[np.sort(idx)]
 
-    if len(centers) < 6:
+    if len(centers) < 6:    # If there is not enough points to make a B-spline, a fallback center point list is returned.
         centers = np.array([car.copy(), [0, 1600], [0, 1700], [0, 1800], [0, 1900], [0, 2000]])
     
     return centers
@@ -75,38 +75,37 @@ def BSpline(points, smoothing, k):########### Make and fit Basis-spline ########
             t = np.append(t, d)
     t = t / t[-1]  # normalize between 0--1
     
-    tck, u = splprep([points[:,0], points[:,1]], u=t, s=smoothing, k=k) # Make B-Spline with smoothing.
+    tck, u = splprep([points[:,0], points[:,1]], u=t, s=smoothing, k=k) # Make B-Spline parameters with smoothing.
     u_fine = np.linspace(0, 1, 800)
-    x_u, y_u = splev(u_fine, tck)
-    dx_u, dy_u = splev(u_fine, tck, der=1)
-    ddx_u, ddy_u = splev(u_fine, tck, der=2)
+    x_u, y_u = splev(u_fine, tck)               # Evaluate B-spline in "u_fine" points
+    dx_u, dy_u = splev(u_fine, tck, der=1)      # Evaluate B-spline first derivitive in "u_fine" points
+    ddx_u, ddy_u = splev(u_fine, tck, der=2)    # Evaluate B-spline second derivitive in "u_fine" points
     
     s = np.sqrt(dx_u**2 + dy_u**2)              # Calculus: A Complete Course, 10Ce
     kp = (dx_u * ddy_u - dy_u * ddx_u) / (s**3) # chapter 12.5: Curvature and Torsion for General Parametrizations.
-    v_max = np.sqrt(1 / (np.abs(kp) + 1e-6))    # Speed
+    v_max = np.sqrt(1 / (np.abs(kp) + 1e-6))    # Max speed based on curvature. 
     v_max = np.clip(v_max, 0, 80)
     return v_max, x_u, y_u
 
 def targetPoint(listA, listB): # Find the target point at a set distance ahead along the spline
     newList = []
-    for i, (x, y) in enumerate(zip(listA, listB)):
-        nextDist = np.sqrt((x - car[0])**2 + (y - car[1])**2)
-        newList.append([nextDist, i])
-    newList = np.array(sorted(newList, key=lambda x: x[0]))
+    for i, (x, y) in enumerate(zip(listA, listB)):              
+        nextDist = np.sqrt((x - car[0])**2 + (y - car[1])**2)   # Finding the closest point of the point lists (B-spline)
+        newList.append([nextDist, i])                           # This is to be able to walk some lookahead distance along the spline in front of the car.
+    newList = np.array(sorted(newList, key=lambda x: x[0]))     
     
-    u0 = int(newList[0, 1])
-    s = 0
-    uL = u0
+    u0 = int(newList[0, 1])     # The closest point index
+    s = 0                       # Current traveled distance along the spline
+    uL = u0                     
 
-    for i in range(u0, len(listA) - 1):
-        ds = np.sqrt((listA[i+1] - listA[i])**2 + (listB[i+1] - listB[i])**2)
-        s += ds
-        if s >= tDistance:
-            uL = i
-            break
-    xL = listA[uL] - car[0]
+    for i in range(u0, len(listA) - 1): # starting from the point index of the spline point closest to the car.
+        ds = np.sqrt((listA[i+1] - listA[i])**2 + (listB[i+1] - listB[i])**2) # Calculate distance to next point of the spline
+        s += ds     # Track how long along the spline we have traveled
+        if s >= tDistance:  # If we have traveled more than the distance we want to travel,
+            uL = i          # we save the index of that point
+            break           # and break the loop.
+    xL = listA[uL] - car[0] # That point is then returned to be the target point.
     yL = listB[uL] - car[1]
-
     return xL, yL
 
 def steeringAngle(x, y): # Calculate steering angle based on target point
