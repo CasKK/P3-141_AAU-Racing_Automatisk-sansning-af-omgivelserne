@@ -117,10 +117,8 @@ def targetPoint(listA, listB): # Find the
     return xL, yL
 
 def steeringAngle(x, y):
-    print("asd")
     alpha = np.arctan2(x, y)
     Ld = np.hypot(x, y)
-
     delta = np.arctan2(2 * L * np.sin(alpha), Ld)
     return delta
 
