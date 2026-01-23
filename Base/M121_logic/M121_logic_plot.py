@@ -242,4 +242,8 @@ def run(input_queue, serial_queue):
             # ax.relim()
             # ax.autoscale_view(scalex=True, scaley=True)
 
+            ############# Save frames ###############
+            # filepath = f'M121_logic/plot/frame_{time.time()}.png'
+            # plt.savefig(filepath, dpi=150, bbox_inches='tight')
+            
             plt.pause(0.001)
